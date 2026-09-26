@@ -4,7 +4,10 @@
     {
       "name": "wedding-site",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8811"],
+      "runtimeArgs": [
+        "-c",
+        "import http.server as h\nclass NoCache(h.SimpleHTTPRequestHandler):\n    def end_headers(self):\n        self.send_header('Cache-Control', 'no-store')\n        super().end_headers()\nh.ThreadingHTTPServer(('', 8811), NoCache).serve_forever()"
+      ],
       "port": 8811
     }
   ]

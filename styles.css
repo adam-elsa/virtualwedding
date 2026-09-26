@@ -169,8 +169,8 @@ a{color:inherit;}
   opacity:0;
   background:radial-gradient(circle at 50% 50%, #fff8e8, #f5dcaa 55%, #d2a15c);
 }
-/* verse overlaid on the walk up to the doors */
-.gate-ayat{
+/* the verse over the walk to the doors, then our story just inside */
+.gate-ayat, .gate-story{
   position:absolute;
   inset:0;
   z-index:4;
@@ -185,7 +185,7 @@ a{color:inherit;}
   transition:opacity 1.1s ease;
 }
 /* a soft dark glow behind the words so they read over the moving scene */
-.gate-ayat::before{
+.gate-ayat::before, .gate-story::before{
   content:'';
   position:absolute;
   left:50%;top:43%;
@@ -195,19 +195,46 @@ a{color:inherit;}
   background:radial-gradient(closest-side, rgba(6,6,14,0.84), rgba(6,6,14,0.62) 50%, rgba(6,6,14,0.25) 80%, transparent);
   z-index:-1;
 }
-.gate.show-ayat .gate-ayat{opacity:1;}
+.gate.show-ayat .gate-ayat, .gate.show-story .gate-story{opacity:1;}
 /* each line rises and comes into focus in turn */
-.gate-ayat > *{
+.gate-ayat > *, .gate-story > *{
   position:relative;
   opacity:0;
   transform:translateY(14px);
   filter:blur(6px);
   transition:opacity 1.1s ease, transform 1.3s cubic-bezier(.2,.7,.2,1), filter 1.3s ease;
 }
-.gate.show-ayat .gate-ayat > *{opacity:1;transform:none;filter:none;}
+.gate.show-ayat .gate-ayat > *, .gate.show-story .gate-story > *{opacity:1;transform:none;filter:none;}
 .gate.show-ayat .ayat-ar{transition-delay:.35s;}
 .gate.show-ayat .ayat-id{transition-delay:.9s;}
 .gate.show-ayat .ayat-src{transition-delay:1.3s;}
+.story-line{
+  font-family:var(--font-display);
+  font-style:italic;
+  font-size:clamp(19px,4vw,26px);
+  line-height:1.55;
+  color:var(--ink);
+  max-width:620px;
+  margin:0 0 6px;
+  text-shadow:0 2px 16px rgba(0,0,0,0.75);
+}
+.story-line:last-child{color:var(--gold-soft);margin-top:12px;}
+/* the other lines fade; the last line lingers (on the dark glow), then flies to the RSVP button */
+.gate-story::before{transition:opacity 1s ease;}
+.gate.story-fly .gate-story::before{opacity:0;} /* the dark glow stays while the line lingers */
+.gate.story-leave .gate-story > *:not(:last-child){opacity:0;filter:blur(4px);transition-delay:0s;}
+.gate.story-leave .story-line:last-child{text-shadow:0 2px 16px rgba(0,0,0,0.8), 0 0 22px rgba(226,199,138,0.55);}
+/* the RSVP button "catches" the line */
+.lobby-tag--cta.is-landing{animation:rsvpLand 1.4s ease-out;}
+@keyframes rsvpLand{
+  0%{box-shadow:0 0 0 0 rgba(226,199,138,0.9), 0 8px 22px rgba(203,161,92,0.35);}
+  100%{box-shadow:0 0 0 22px rgba(226,199,138,0), 0 8px 22px rgba(203,161,92,0.35);}
+}
+.gate.show-story .story-line:nth-child(2){transition-delay:.3s;}
+.gate.show-story .story-line:nth-child(3){transition-delay:1.0s;}
+.gate.show-story .story-line:nth-child(4){transition-delay:1.7s;}
+.gate.show-story .story-line:nth-child(5){transition-delay:2.4s;}
+.gate.show-story .story-line:nth-child(6){transition-delay:3.1s;}
 .ayat-ornament{color:var(--gold);font-size:26px;margin-bottom:12px;text-shadow:0 0 18px rgba(203,161,92,0.5);}
 .ayat-ar{
   font-family:'Amiri', serif;
@@ -271,6 +298,16 @@ a{color:inherit;}
 }
 .lobby-hint{margin:0;font-size:12px;color:var(--ink-dim);letter-spacing:0.04em;text-shadow:0 1px 10px rgba(0,0,0,0.7);}
 .lobby-bottom{display:flex;gap:12px;align-items:center;margin-top:auto;}
+/* fallback to the plain invitation: a quiet two-line outline button */
+.lobby-next{padding:10px 24px;line-height:1.4;}
+.lobby-next small{
+  display:block;
+  font-size:10px;
+  letter-spacing:0.04em;
+  text-transform:none;
+  color:var(--ink-dim);
+  opacity:0.85;
+}
 .lobby-back{display:none;}
 .lobby-ui.is-focused .lobby-back{display:inline-block;}
 .lobby-ui.is-focused .lobby-next, .lobby-ui.is-focused .lobby-top{display:none;}
@@ -341,7 +378,12 @@ a{color:inherit;}
 .lobby-card[data-show="couple"] [data-card="couple"],
 .lobby-card[data-show="bride"] [data-card="bride"],
 .lobby-card[data-show="map"] [data-card="map"],
-.lobby-card[data-show="rsvp"] [data-card="rsvp"]{display:block;}
+.lobby-card[data-show="rsvp"] [data-card="rsvp"],
+.lobby-card[data-show="gift"] [data-card="gift"]{display:block;}
+.card-gift{margin:14px 0 16px;padding:14px 10px;border:1px solid var(--line);border-radius:12px;}
+.card-gift .gift-bank{margin:0;font-size:12px;letter-spacing:0.24em;color:var(--gold);}
+.card-gift .gift-number{margin:6px 0;font-family:var(--font-display);font-size:28px;letter-spacing:0.06em;color:var(--ink);}
+.card-gift .gift-holder{margin:0;font-size:13px;color:var(--ink-dim);}
 .card-name{
   font-family:var(--font-script);
   font-weight:400;
@@ -508,7 +550,7 @@ a{color:inherit;}
   position:fixed;
   bottom:22px;
   right:22px;
-  z-index:40;
+  z-index:60; /* above the 3D gate + lobby, so the music can be paused there too */
   width:46px;height:46px;
   border-radius:50%;
   border:1px solid var(--line);
