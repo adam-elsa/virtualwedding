@@ -307,6 +307,20 @@ function init() {
   fit();
   window.addEventListener('resize', fit);
 
+  // The opening text sits at the top of the screen, so slide the picture down (without tilting
+  // the camera) to put the hotel underneath it: a lot on phones, a little on wide screens.
+  const frameShift = { f: 0, w: 0, h: 0 };
+  // 0.28 of the screen on phones (aspect <= 0.6) down to 0.08 on wide monitors (aspect >= 1.7)
+  const baseShift = () => 0.28 - 0.2 * THREE.MathUtils.clamp((camera.aspect - 0.6) / 1.1, 0, 1);
+  function setViewShift(f) {
+    const w = gate.clientWidth || window.innerWidth;
+    const h = gate.clientHeight || window.innerHeight;
+    if (Math.abs(f - frameShift.f) < 1e-4 && w === frameShift.w && h === frameShift.h) return;
+    Object.assign(frameShift, { f, w, h });
+    if (f === 0) camera.clearViewOffset();
+    else camera.setViewOffset(w, h, 0, -f * h, w, h);
+  }
+
   const look = new THREE.Vector3();
   // orbit the façade at eye level; lookY lets the view tilt up/down
   function placeCamera(az, r, lookY) {
@@ -417,6 +431,7 @@ function init() {
       if (k >= 1) state = 'idle';
       const swayAz = Math.sin(t * 0.2) * 0.025 + pointer.sx * 0.16;
       placeCamera(THREE.MathUtils.lerp(-0.34, 0, k) + swayAz, THREE.MathUtils.lerp(rest.r * 1.6, rest.r, k), TARGET.y - pointer.sy * 1.6);
+      setViewShift(baseShift());
     } else if (state === 'walk') {
       stepWalk(performance.now() - walk.start);
     } else if (state === 'ayat') {
@@ -430,6 +445,8 @@ function init() {
   // walk around the fountain, up the carpet, doors swing open, step inside
   function stepWalk(ms) {
     const W = walk;
+    // ease the picture back to centre as the walk starts, so the doors are framed dead ahead
+    setViewShift(baseShift() * (1 - smooth(0, W.walkMs * 0.45, ms)));
     if (ms < W.walkMs) {
       const u = ms / W.walkMs;
       const e = easeInOut(u);
@@ -469,6 +486,7 @@ function init() {
   function startAyat() {
     state = 'ayat';
     ayat = { start: performance.now(), hidden: false, entered: false };
+    setViewShift(0);
     gate.classList.add('show-ayat');
     renderer.compile(lobby.scene, camera); // warm up shaders while the screen is white
   }
