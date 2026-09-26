@@ -140,10 +140,27 @@ a{color:inherit;}
   position:absolute;
   inset:0;
   pointer-events:none;
+}
+/* opening screen: all the text sits at the top, so shade the top; walk + lobby: top and bottom */
+.gate-scrim::before, .gate-scrim::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  transition:opacity .8s ease;
+}
+.gate-scrim::before{
+  background:linear-gradient(to bottom,
+    rgba(5,8,23,0.88) 0%, rgba(5,8,23,0.7) 28%, rgba(5,8,23,0.3) 46%, transparent 60%,
+    transparent 82%, rgba(10,9,12,0.5) 100%);
+}
+.gate-scrim::after{
+  opacity:0;
   background:linear-gradient(to bottom,
     rgba(5,8,23,0.82) 0%, rgba(5,8,23,0.35) 22%, transparent 38%,
     transparent 60%, rgba(10,9,12,0.45) 74%, rgba(10,9,12,0.9) 100%);
 }
+.gate.is-flying .gate-scrim::before{opacity:0;}
+.gate.is-flying .gate-scrim::after{opacity:1;}
 .gate-flash{
   position:absolute;
   inset:0;
@@ -347,6 +364,20 @@ a{color:inherit;}
   .card-name{font-size:44px;}
   .card-map{height:120px;margin:10px 0;}
   .card-times{margin-bottom:12px;}
+  /* couple cards: a slim column on the right, beside the photo instead of over it */
+  .lobby-card[data-show="groom"], .lobby-card[data-show="couple"], .lobby-card[data-show="bride"]{
+    left:auto;right:10px;
+    width:min(47vw,240px);
+    top:50%;bottom:auto;
+    transform:translateY(-44%);
+    padding:16px 10px;
+  }
+  .lobby-card[data-show="groom"].is-open, .lobby-card[data-show="couple"].is-open, .lobby-card[data-show="bride"].is-open{
+    transform:translateY(-50%);
+  }
+  .lobby-card[data-show="groom"] .card-name, .lobby-card[data-show="couple"] .card-name, .lobby-card[data-show="bride"] .card-name{font-size:36px;}
+  .lobby-card[data-show="groom"] .eyebrow, .lobby-card[data-show="couple"] .eyebrow, .lobby-card[data-show="bride"] .eyebrow{font-size:10px;letter-spacing:0.18em;}
+  .card-parents{font-size:15px;}
 }
 
 .gate-loader{
@@ -373,12 +404,13 @@ a{color:inherit;}
   height:100%;
   display:flex;
   flex-direction:column;
-  justify-content:space-between;
+  justify-content:flex-start; /* names, guest and the open button all together at the top */
   align-items:center;
   text-align:center;
   padding:max(5vh, env(safe-area-inset-top)) 24px max(5vh, env(safe-area-inset-bottom));
   transition:opacity .6s ease, transform .6s ease;
 }
+.gate-bottom{margin-top:18px;}
 .gate.is-flying .gate-inner{opacity:0;transform:translateY(12px);pointer-events:none;}
 .gate-top, .gate-bottom{animation:gateIn 1.4s ease both;}
 .gate-top{animation-delay:.5s;}
@@ -413,9 +445,9 @@ a{color:inherit;}
 .gate-divider{
   width:60px;height:1px;
   background:linear-gradient(90deg,transparent,var(--gold),transparent);
-  margin:16px auto;
+  margin:14px auto;
 }
-.gate-guest{color:var(--ink-dim);font-weight:300;line-height:1.8;margin:0 0 22px;font-size:15px;}
+.gate-guest{color:var(--ink-dim);font-weight:300;line-height:1.8;margin:0 0 18px;font-size:15px;}
 .gate-guest strong{color:var(--gold-soft);font-weight:500;font-size:17px;}
 .btn-open{
   font-family:var(--font-sans);

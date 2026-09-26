@@ -296,8 +296,12 @@ export function createLobby() {
     tour: null,      // continuous pan along several poses, started once the glide in lands
   };
   const m4 = new THREE.Matrix4();
-  const ROOM_CENTER = new THREE.Vector3(0, 1.7, 3), bowDir = new THREE.Vector3();
-  const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+  // smootherstep: speed and acceleration both ease to zero at the ends, no lurch at start/stop
+  const ease = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+  // the pose the camera is heading for this frame; the camera itself follows it with light smoothing
+  const raw = { pos: new THREE.Vector3(), q: new THREE.Quaternion(), snap: true, prev: new THREE.Vector3(), vel: new THREE.Vector3() };
+  const v0 = new THREE.Vector3(); // velocity carried into a new glide
+  const SMOOTH = 0.12; // seconds
 
   function fitCamera(camera) {
     const portrait = camera.aspect < 1;
@@ -309,8 +313,13 @@ export function createLobby() {
 
   function glide(camera, to, dur) {
     cam.tour = null;
-    cam.fromPos.copy(camera.position);
-    cam.fromQ.copy(camera.quaternion);
+    // start from where the camera was heading (not its lagging on-screen pose)
+    cam.fromPos.copy(raw.pos);
+    cam.fromQ.copy(raw.q);
+    v0.copy(raw.vel);
+    // longer trips get a little more time so they never whip across the room
+    const dist = raw.pos.distanceTo(to ? to.pos : cam.rest);
+    dur = Math.max(dur, 0.8 + dist * 0.1);
     cam.to = to;
     cam.k = 0;
     cam.dur = dur;
@@ -322,13 +331,14 @@ export function createLobby() {
     const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     const aspect = camera.aspect;
     let rx = 0, ry = 0, hx = 0.86, hy = 0.8; // where the frame lands on screen (NDC) and how much room it gets
+    let zoom = e.group === 'map' || e.group === 'rsvp' ? 1 : 1.3;
     if (layout !== 'center') {
       if (aspect >= 1) { rx = -0.38; hx = 0.54; hy = 0.78; }
       else if (layout === 'tall') { ry = 0.6; hy = 0.3; hx = 0.9; }
-      else { ry = 0.4; hy = 0.46; hx = 0.9; }
+      // phones: photo on the left, slim card on the right (it only covers the wall at the photo's edge)
+      else { rx = -0.3; hx = 0.68; hy = 0.8; zoom = 1; }
     }
     const fw = e.w + 0.36, fh = e.h + 0.36;
-    const zoom = e.group === 'map' || e.group === 'rsvp' ? 1 : 1.3;
     const d = Math.max(fh / 2 / (hy * tanV), fw / 2 / (hx * tanV * aspect)) / zoom;
     const right = new THREE.Vector3().crossVectors(e.normal.clone().negate(), UP).normalize();
     const pos = e.center.clone().addScaledVector(e.normal, d)
@@ -379,14 +389,14 @@ export function createLobby() {
     };
   }
 
-  function stepTour(camera, dt) {
+  function stepTour(dt) {
     const tour = cam.tour;
     tour.t = Math.min(tour.dur, tour.t + dt);
     tour.u = tour.at(tour.t / tour.dur);
     const last = tour.poses.length - 1;
-    tour.curve.getPoint(tour.u / last, camera.position);
+    tour.curve.getPoint(tour.u / last, raw.pos);
     const i = Math.min(last - 1, Math.floor(tour.u));
-    camera.quaternion.slerpQuaternions(tour.poses[i].q, tour.poses[i + 1].q, tour.u - i);
+    raw.q.slerpQuaternions(tour.poses[i].q, tour.poses[i + 1].q, tour.u - i);
   }
 
   const raycaster = new THREE.Raycaster();
@@ -405,6 +415,11 @@ export function createLobby() {
       fitCamera(camera);
       camera.position.copy(cam.start);
       camera.quaternion.identity();
+      raw.pos.copy(cam.start);
+      raw.prev.copy(cam.start);
+      raw.vel.set(0, 0, 0);
+      raw.q.identity();
+      raw.snap = true;
       glide(camera, null, 3.5);
     },
     update(camera, t, dt, pointer) {
@@ -414,16 +429,22 @@ export function createLobby() {
       cam.k = Math.min(1, cam.k + dt / cam.dur);
       if (cam.tour && cam.k >= 1) {
         cam.tour.active = true;
-        stepTour(camera, dt);
-        return;
+        stepTour(dt);
+      } else {
+        const e = ease(cam.k), k = cam.k;
+        raw.pos.lerpVectors(cam.fromPos, cam.to ? cam.to.pos : cam.rest, e);
+        // keep the motion we had when this glide began, fading it out (Hermite start tangent)
+        raw.pos.addScaledVector(v0, cam.dur * k * (1 - k) * (1 - k));
+        raw.q.slerpQuaternions(cam.fromQ, cam.to ? cam.to.q : cam.restQ, e);
       }
-      const e = ease(cam.k);
-      const target = cam.to ? cam.to.pos : cam.rest;
-      camera.position.lerpVectors(cam.fromPos, target, e);
-      // bow the path back into the room so glides between walls don't skim corners
-      const bow = Math.sin(Math.PI * e) * Math.min(4, 0.3 * cam.fromPos.distanceTo(target));
-      if (bow > 0.001) camera.position.add(bowDir.subVectors(ROOM_CENTER, camera.position).setY(0).normalize().multiplyScalar(bow));
-      camera.quaternion.slerpQuaternions(cam.fromQ, cam.to ? cam.to.q : cam.restQ, e);
+      // follow the target pose with a little lag, so a move interrupted mid-way
+      // (or a new one starting) blends in instead of snapping
+      if (dt > 0) raw.vel.subVectors(raw.pos, raw.prev).divideScalar(dt);
+      raw.prev.copy(raw.pos);
+      const a = raw.snap ? 1 : 1 - Math.exp(-dt / SMOOTH);
+      raw.snap = false;
+      camera.position.lerp(raw.pos, a);
+      camera.quaternion.slerp(raw.q, a);
     },
     settled() { return cam.k >= 1; },
     goRest(camera, dur = 1.4) { glide(camera, null, dur); },
