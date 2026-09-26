@@ -141,7 +141,6 @@
 
   // ---------- RSVP submit ----------
   const rsvpForm = document.getElementById('rsvpForm');
-  const rsvpStatus = document.getElementById('rsvpStatus');
   const wishesList = document.getElementById('wishesList');
 
   function renderWish(name, message) {
@@ -177,44 +176,52 @@
   }
   loadWishes();
 
-  rsvpForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(rsvpForm);
-    const payload = {
-      name: formData.get('name'),
-      attendance: formData.get('attendance'),
-      guests: formData.get('guests'),
-      message: formData.get('message'),
-    };
+  // the invitation's form and the one at the lobby reception share this
+  function wireRsvp(form) {
+    if (!form) return;
+    const status = form.querySelector('.rsvp-status');
+    if (guest && form.elements.name && !form.elements.name.value) form.elements.name.value = guest;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const payload = {
+        name: formData.get('name'),
+        attendance: formData.get('attendance'),
+        guests: formData.get('guests'),
+        message: formData.get('message'),
+      };
 
-    rsvpStatus.textContent = 'Mengirim...';
-    rsvpStatus.className = 'rsvp-status';
+      status.textContent = 'Mengirim...';
+      status.className = 'rsvp-status';
 
-    if (!RSVP_ENDPOINT_URL) {
-      // no backend configured yet — show locally so the form still feels alive
-      renderWish(payload.name, payload.message);
-      rsvpStatus.textContent = 'Terima kasih! (mode pratinjau — belum tersambung ke Google Sheet)';
-      rsvpStatus.className = 'rsvp-status ok';
-      rsvpForm.reset();
-      return;
-    }
+      if (!RSVP_ENDPOINT_URL) {
+        // no backend configured yet — show locally so the form still feels alive
+        renderWish(payload.name, payload.message);
+        status.textContent = 'Terima kasih! (mode pratinjau — belum tersambung ke Google Sheet)';
+        status.className = 'rsvp-status ok';
+        form.reset();
+        return;
+      }
 
-    try {
-      await fetch(RSVP_ENDPOINT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload),
-      });
-      renderWish(payload.name, payload.message);
-      rsvpStatus.textContent = 'Terima kasih atas konfirmasinya!';
-      rsvpStatus.className = 'rsvp-status ok';
-      rsvpForm.reset();
-    } catch (err) {
-      rsvpStatus.textContent = 'Gagal mengirim. Silakan coba lagi.';
-      rsvpStatus.className = 'rsvp-status err';
-    }
-  });
+      try {
+        await fetch(RSVP_ENDPOINT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload),
+        });
+        renderWish(payload.name, payload.message);
+        status.textContent = 'Terima kasih atas konfirmasinya!';
+        status.className = 'rsvp-status ok';
+        form.reset();
+      } catch (err) {
+        status.textContent = 'Gagal mengirim. Silakan coba lagi.';
+        status.className = 'rsvp-status err';
+      }
+    });
+  }
+  wireRsvp(rsvpForm);
+  wireRsvp(document.getElementById('lobbyRsvpForm'));
 
   // ---------- copy gift number ----------
   const copyGiftBtn = document.getElementById('copyGift');

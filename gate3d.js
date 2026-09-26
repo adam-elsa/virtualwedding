@@ -334,8 +334,8 @@ function init() {
     // however the phone is held becomes "centre", re-centring slowly
     tilt.bx += (x - tilt.bx) * 0.003;
     tilt.by += (y - tilt.by) * 0.003;
-    pointer.x = clamp1((x - tilt.bx) / 18);
-    pointer.y = clamp1((y - tilt.by) / 18);
+    pointer.x = -clamp1((x - tilt.bx) / 18);
+    pointer.y = -clamp1((y - tilt.by) / 18);
     if (!tilt.active && hint) hint.hidden = true;
     tilt.active = true;
   }
@@ -499,15 +499,15 @@ function init() {
 
   // ---------- lobby: labelled photo groups ----------
   // rest   -> look around; hover (or on phones, always) shows each group's label
-  // couple -> tour: Adam (card) -> together -> Elsa (card); a tap skips ahead
+  // couple -> tour: pans Adam (card) -> together -> Elsa (card); a tap skips to Elsa
   // map    -> map board + card with Google Maps and the Akad/Resepsi times
-  // story  -> turn to the right-wall gallery; tap a photo -> photo (back returns here)
-  const COUPLE_TOUR = [
-    { id: 'adam', card: 'groom' },
-    { id: 'together', card: 'couple' },
-    { id: 'elsa', card: 'bride' },
-  ];
-  const TOUR_GLIDE = 2.6, TOUR_HOLD = 4500;
+  // rsvp   -> desk / door / photo by the door: face the door, RSVP card over it
+  // story  -> tap a photo: zoom into it; the label: overview of the corner (back returns there)
+  // couple tour: one continuous pan Adam -> together -> Elsa (slow on the
+  // portraits, quicker through the middle); the card follows the camera
+  const COUPLE_TOUR = ['adam', 'together', 'elsa'];
+  const TOUR_PAN = 13; // seconds for the pan itself
+  const tourCard = (u) => (u < 0.55 ? 'groom' : u < 1.45 ? 'couple' : 'bride');
   const lobbyUi = document.getElementById('lobbyUi');
   const lobbyHint = document.getElementById('lobbyHint');
   const lobbyBack = document.getElementById('lobbyBack');
@@ -526,11 +526,15 @@ function init() {
 
   function showCard(name, delay) {
     clearTimeout(cardTimer);
+    // the RSVP card sits centred over the door; the others beside/below the photo
+    if (lobbyUi) lobbyUi.classList.toggle('has-card', !!name && name !== 'rsvp');
     if (!card) return;
     card.classList.remove('is-open');
     if (!name) return;
     cardTimer = setTimeout(() => {
       card.dataset.show = name;
+      card.classList.toggle('is-center', name === 'rsvp');
+      if (name !== 'rsvp') card.style.left = card.style.top = ''; // back to the stylesheet's placement
       if (name === 'map') {
         // load the Google map only when someone actually opens it
         const frame = card.querySelector('iframe[data-src]');
@@ -557,31 +561,46 @@ function init() {
 
   function openGroup(group, entry) {
     if (group === 'couple') {
-      setView({ name: 'couple', step: 0, next: performance.now() + 1800 + TOUR_HOLD });
-      lobby.goItem(camera, 'adam', 'caption', 1.8);
+      setView({ name: 'couple', card: 'groom' });
+      lobby.goTour(camera, COUPLE_TOUR, 'caption', 1.8, TOUR_PAN);
       showCard('groom', 1300);
     } else if (group === 'map') {
       setView({ name: 'map' });
       lobby.goItem(camera, 'map', 'tall', 1.6);
       showCard('map', 1100);
-    } else if (group === 'story') {
-      setView({ name: 'story' });
-      lobby.goGallery(camera, 2.2);
-      showCard(null);
-    } else if (group === 'gallery' && entry) {
+    } else if (group === 'rsvp') {
+      setView({ name: 'rsvp' });
+      // measure the RSVP card, then frame the door to sit just inside it
+      card.classList.remove('is-open');
+      card.dataset.show = 'rsvp';
+      card.classList.add('is-center');
+      const r = card.getBoundingClientRect();
+      const W = canvas.clientWidth, H = canvas.clientHeight;
+      // look toward the door: just left of centre on wide screens, centred on phones
+      const ndcX = W / H >= 1 ? -0.18 : 0;
+      const at = lobby.goDoor(camera, (r.width * 0.72) / W, (r.height * 0.72) / H, ndcX, 1.6);
+      card.style.left = `${Math.min(W - r.width / 2 - 16, Math.max(r.width / 2 + 16, at.x * W))}px`;
+      card.style.top = `${Math.min(H - r.height / 2 - 90, Math.max(r.height / 2 + 16, at.y * H))}px`;
+      showCard('rsvp', 1100);
+    } else if (group === 'story' && entry) {
+      // a single photo: zoom straight into it
       setView({ name: 'photo', parent: view.name === 'story' ? 'story' : 'rest' });
       lobby.goItem(camera, entry.id, 'center', 1.3);
+      showCard(null);
+    } else if (group === 'story') {
+      // the label: step back to see the whole corner
+      setView({ name: 'story' });
+      lobby.goStory(camera, 2.2);
       showCard(null);
     }
   }
 
-  function nextTourStep() {
-    const step = view.step + 1;
-    if (step >= COUPLE_TOUR.length) return back();
-    view.step = step;
-    view.next = performance.now() + TOUR_GLIDE * 1000 + TOUR_HOLD;
-    lobby.goItem(camera, COUPLE_TOUR[step].id, 'caption', TOUR_GLIDE);
-    showCard(COUPLE_TOUR[step].card, TOUR_GLIDE * 1000 - 500);
+  // tap during the pan: jump ahead to Elsa; tap once there: leave
+  function skipTour() {
+    if (lobby.tourDone()) return back();
+    lobby.goItem(camera, COUPLE_TOUR[COUPLE_TOUR.length - 1], 'caption', 1.4);
+    view.card = 'bride';
+    showCard('bride', 900);
   }
 
   function back() {
@@ -593,7 +612,13 @@ function init() {
 
   // called every frame while in the lobby
   function tickLobby() {
-    if (view.name === 'couple' && view.step < COUPLE_TOUR.length - 1 && performance.now() >= view.next) nextTourStep();
+    if (view.name === 'couple') {
+      const u = lobby.tourProgress();
+      if (u >= 0 && tourCard(u) !== view.card) {
+        view.card = tourCard(u);
+        showCard(view.card, 250);
+      }
+    }
     // float each group's label over its photos
     const w = canvas.clientWidth, h = canvas.clientHeight;
     const showAll = isTouch && view.name === 'rest' && lobby.settled();
@@ -621,7 +646,7 @@ function init() {
   const clickable = (entry) => {
     if (!entry) return false;
     if (view.name === 'rest') return true;
-    if (view.name === 'story') return entry.group === 'gallery' || entry.group === 'story';
+    if (view.name === 'story') return entry.group === 'story';
     return false;
   };
   let downAt = null;
@@ -633,10 +658,9 @@ function init() {
     if (moved > 10) return;
     const entry = lobby.pick(camera, ...toNdc(e));
     if (clickable(entry)) {
-      // in the story view, the column photos open on their own too
-      openGroup(view.name === 'story' ? 'gallery' : entry.group, entry);
+      openGroup(entry.group, entry);
     } else if (view.name === 'couple') {
-      nextTourStep();
+      skipTour();
     } else if (view.name !== 'rest') {
       back();
     }
@@ -644,10 +668,16 @@ function init() {
   canvas.addEventListener('pointermove', (e) => {
     if (state !== 'lobby' || e.pointerType !== 'mouse') return;
     const entry = lobby.pick(camera, ...toNdc(e));
-    setHover(clickable(entry) ? (view.name === 'story' ? 'gallery' : entry.group) : null);
+    setHover(clickable(entry) ? entry.group : null);
   });
-  canvas.addEventListener('pointerleave', () => setHover(null));
-  for (const tag of tags) tag.addEventListener('click', () => { if (state === 'lobby' && view.name === 'rest') openGroup(tag.dataset.group); });
+  canvas.addEventListener('pointerleave', (e) => {
+    if (e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.lobby-tag')) return;
+    setHover(null);
+  });
+  for (const tag of tags) {
+    tag.addEventListener('click', () => { if (state === 'lobby' && view.name === 'rest') openGroup(tag.dataset.group); });
+    tag.addEventListener('pointerleave', (e) => { if (e.relatedTarget !== canvas && !isTouch) setHover(null); });
+  }
   if (lobbyBack) lobbyBack.addEventListener('click', back);
   if (lobbyNext) lobbyNext.addEventListener('click', () => {
     if (state !== 'lobby') return;
