@@ -379,6 +379,8 @@ function init() {
   // -> lobby (look around, tap photos) -> leave (resolves flyIn's promise)
   const clock = new THREE.Clock();
   const INTRO = 7; // seconds of slow zoom-in from the left
+  const CREEP = 0.25; // then keep strolling forward, closing up to 25% of the distance (never stopping dead)
+  const CREEP_TIME = 80; // seconds: how gradually that stroll eases off
   const ARRIVE_MS = 1900; // white flash -> lobby
   let state = 'intro';
   let walk = null;
@@ -430,7 +432,11 @@ function init() {
       const k = easeOut(Math.min(1, t / INTRO));
       if (k >= 1) state = 'idle';
       const swayAz = Math.sin(t * 0.2) * 0.025 + pointer.sx * 0.16;
-      placeCamera(THREE.MathUtils.lerp(-0.34, 0, k) + swayAz, THREE.MathUtils.lerp(rest.r * 1.6, rest.r, k), TARGET.y - pointer.sy * 1.6);
+      // a very slow walk toward the hotel that starts with the swoop and carries on after it
+      const creep = rest.r * CREEP * (1 - Math.exp(-t / CREEP_TIME));
+      const r = THREE.MathUtils.lerp(rest.r * 1.6, rest.r, k) - creep;
+      placeCamera(THREE.MathUtils.lerp(-0.34, 0, k) + swayAz, r, TARGET.y - pointer.sy * 1.6);
+      camera.position.y += Math.abs(Math.sin(t * Math.PI * 0.8)) * 0.025; // unhurried footsteps
       setViewShift(baseShift());
     } else if (state === 'walk') {
       stepWalk(performance.now() - walk.start);
@@ -453,7 +459,7 @@ function init() {
       W.curve.getPointAt(e, camera.position);
       // footsteps: gentle head bob that fades in/out with walking speed
       const pace = Math.sin(Math.PI * u);
-      camera.position.y += Math.abs(Math.sin((ms / 1000) * Math.PI * 1.9)) * 0.07 * pace;
+      camera.position.y += Math.abs(Math.sin((ms / 1000) * Math.PI * 1.3)) * 0.06 * pace;
       // look where we're walking, then settle on the doors
       W.curve.getTangentAt(e, tmp);
       tmp.y = 0;
@@ -723,7 +729,7 @@ function init() {
       const dist = 6.6 + 0.5;
       const halfH = Math.atan(Math.tan(Math.atan(2.2 / dist)) / camera.aspect);
       walk.doorFov = Math.max(40, THREE.MathUtils.radToDeg(halfH * 2));
-      walk.walkMs = Math.min(7500, Math.max(5500, 3200 + walk.curve.getLength() * 35));
+      walk.walkMs = Math.min(11000, Math.max(8000, 4800 + walk.curve.getLength() * 55));
       walk.doorAt = walk.walkMs - 500;
       walk.doorMs = 1700;
       walk.enterAt = walk.walkMs + 1000;
