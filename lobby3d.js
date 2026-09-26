@@ -10,16 +10,16 @@ const W = 20, D = 24, H = 5.2;
 const SLAT_H = H - 0.4; // leave a gap at the top for the warm cove light
 
 // Wall items, grouped by what clicking them opens:
-//   couple  -> "Kedua Mempelai" tour (Adam -> together -> Elsa)
+//   couple  -> "Kedua Mempelai" tour (Adam -> Elsa -> together)
 //   map     -> "Lokasi & Tempat" (map + Akad/Resepsi times)
 //   story   -> "Cerita Kami": the column + right-wall photos; each zooms in on its own,
 //              the label shows them all together
 //   rsvp    -> RSVP card; the photo by the door joins the reception desk + door (set up below)
 const PHOTOS = [
   { id: 'venue', group: 'rsvp', src: 'assets/img/04_Venue.jpg', pos: [-9.84, 2.6, -9.6], normal: [1, 0, 0], max: 2.5 },
-  { id: 'adam', group: 'couple', src: 'assets/img/02_ProfileAdam.jpg', pos: [-1.9, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
-  { id: 'together', group: 'couple', src: 'assets/img/01_Banner.jpg', pos: [1.25, 2.65, -11.94], normal: [0, 0, 1], max: 2.8 },
-  { id: 'elsa', group: 'couple', src: 'assets/img/02_ProfileElsa.jpg', pos: [4.35, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
+  { id: 'adam', group: 'couple', src: 'assets/img/02_ProfileAdam.jpg', pos: [-1.89, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
+  { id: 'elsa', group: 'couple', src: 'assets/img/02_ProfileElsa.jpg', pos: [0.63, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
+  { id: 'together', group: 'couple', src: 'assets/img/01_Banner.jpg', pos: [3.75, 2.65, -11.94], normal: [0, 0, 1], max: 2.8 },
   { id: 'story-a', group: 'story', src: 'assets/img/05_TimingAkadResepsi.jpg', pos: [5.84, 2.6, -9.2], normal: [-1, 0, 0], max: 2.6 },
   { id: 'story-b', group: 'story', src: 'assets/img/06_FooterThankyou.jpg', pos: [8.0, 2.6, -5.84], normal: [0, 0, 1], max: 2.8 },
   { id: 'story-c', group: 'story', src: 'assets/img/07_Story1.jpg', pos: [9.84, 2.6, -4.55], normal: [-1, 0, 0], max: 2.7 },
@@ -367,13 +367,18 @@ export function createLobby() {
     return { pos, q };
   }
 
-  // Continuous pan through `poses`: slow at the first and last, fast in between,
-  // never pausing. `u` runs 0 .. poses.length - 1 (0 = first pose, 1 = second, ...).
+  // Continuous pan through `poses`, never pausing: it lingers (slow) on every pose and
+  // moves quicker only in the gaps between them. `u` runs 0 .. poses.length - 1.
   function makeTour(poses, dur) {
     const N = 240;
-    const speed = (t) => (0.22 + Math.exp(-(((t - 0.5) / 0.16) ** 2))) // fast through the middle
-      * Math.min(1, t / 0.1)                                          // ease out of the first pose
-      * Math.min(1, (1 - t) / 0.12);                                  // come to rest on the last
+    const gaps = poses.length - 1;
+    const speed = (t) => {
+      let v = 0.22;
+      for (let k = 0; k < gaps; k++) v += Math.exp(-(((t - (k + 0.5) / gaps) / (0.2 / gaps)) ** 2)); // quicker between poses
+      return v
+        * Math.min(1, t / 0.1)             // ease out of the first pose
+        * Math.min(1, (1 - t) / 0.12);     // come to rest on the last
+    };
     const table = new Float32Array(N + 1);
     for (let i = 1; i <= N; i++) table[i] = table[i - 1] + speed((i - 0.5) / N);
     const total = table[N];
@@ -406,9 +411,9 @@ export function createLobby() {
     scene,
     // label anchors for the three clickable groups
     anchors: {
-      couple: new THREE.Vector3(1.25, 4.45, -11.8),
+      couple: new THREE.Vector3(0.9, 4.45, -11.8),
       map: new THREE.Vector3(MAP_BOARD.pos[0], 4.2, -11.8),
-      rsvp: new THREE.Vector3(DESK_X, 0.75, -8.62),
+      rsvp: new THREE.Vector3(DESK_X, 0.55, -8.64), // middle of the desk's black front: gold on black stands out
       story: new THREE.Vector3(8.0, 4.5, -5.7),
     },
     enter(camera) {
