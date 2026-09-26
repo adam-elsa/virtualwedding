@@ -20,6 +20,9 @@
   const siteMain = document.getElementById('siteMain');
   const musicToggle = document.getElementById('musicToggle');
   const bgm = document.getElementById('bgm');
+  // phones & tablets (touch is the main input) get the guitar version; computers the orchestra
+  const onTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+  bgm.src = onTouchDevice ? 'assets/audio/backsound-guitar.mp3' : 'assets/audio/backsound-orchestra.mp3';
 
   let opening = false;
   function openInvitation() {
@@ -33,7 +36,7 @@
       musicToggle.querySelector('.music-icon').classList.add('paused');
     });
     // 3D gate (gate3d.js): walk in, verse, lobby — resolves when the guest
-    // taps "Lanjut ke Undangan" (or right away if the scene never loaded)
+    // taps "Buka Undangan Simple" (or right away if the scene never loaded)
     const scene3d = window.weddingGate;
     Promise.resolve(scene3d ? scene3d.flyIn() : null).then(revealSite, revealSite);
   }
@@ -223,16 +226,19 @@
   wireRsvp(rsvpForm);
   wireRsvp(document.getElementById('lobbyRsvpForm'));
 
-  // ---------- copy gift number ----------
-  const copyGiftBtn = document.getElementById('copyGift');
-  const giftNumber = document.getElementById('giftNumber');
-  copyGiftBtn.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(giftNumber.textContent.trim());
-      copyGiftBtn.textContent = 'Tersalin!';
-      setTimeout(() => (copyGiftBtn.textContent = 'Salin Nomor Rekening'), 1800);
-    } catch (err) {
-      // clipboard blocked — no-op
-    }
-  });
+  // ---------- copy gift number (invitation + lobby kotak angpao) ----------
+  function wireCopy(btn, numberEl) {
+    if (!btn || !numberEl) return;
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(numberEl.textContent.trim());
+        btn.textContent = 'Tersalin!';
+        setTimeout(() => (btn.textContent = 'Salin Nomor Rekening'), 1800);
+      } catch (err) {
+        // clipboard blocked — no-op
+      }
+    });
+  }
+  wireCopy(document.getElementById('copyGift'), document.getElementById('giftNumber'));
+  wireCopy(document.getElementById('lobbyCopyGift'), document.getElementById('lobbyGiftNumber'));
 })();

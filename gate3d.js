@@ -379,7 +379,10 @@ function init() {
   // -> lobby (look around, tap photos) -> leave (resolves flyIn's promise)
   const clock = new THREE.Clock();
   const INTRO = 7; // seconds of slow zoom-in from the left
+  const CREEP = 0.25; // then keep strolling forward, closing up to 25% of the distance (never stopping dead)
+  const CREEP_TIME = 80; // seconds: how gradually that stroll eases off
   const ARRIVE_MS = 1900; // white flash -> lobby
+  const STORY_AT = 1300, STORY_MS = 7500; // our story over the lobby as the camera glides in (a tap skips)
   let state = 'intro';
   let walk = null;
   let arrive = null;
@@ -430,7 +433,11 @@ function init() {
       const k = easeOut(Math.min(1, t / INTRO));
       if (k >= 1) state = 'idle';
       const swayAz = Math.sin(t * 0.2) * 0.025 + pointer.sx * 0.16;
-      placeCamera(THREE.MathUtils.lerp(-0.34, 0, k) + swayAz, THREE.MathUtils.lerp(rest.r * 1.6, rest.r, k), TARGET.y - pointer.sy * 1.6);
+      // a very slow walk toward the hotel that starts with the swoop and carries on after it
+      const creep = rest.r * CREEP * (1 - Math.exp(-t / CREEP_TIME));
+      const r = THREE.MathUtils.lerp(rest.r * 1.6, rest.r, k) - creep;
+      placeCamera(THREE.MathUtils.lerp(-0.34, 0, k) + swayAz, r, TARGET.y - pointer.sy * 1.6);
+      camera.position.y += Math.abs(Math.sin(t * Math.PI * 0.8)) * 0.025; // unhurried footsteps
       setViewShift(baseShift());
     } else if (state === 'walk') {
       stepWalk(performance.now() - walk.start);
@@ -453,7 +460,7 @@ function init() {
       W.curve.getPointAt(e, camera.position);
       // footsteps: gentle head bob that fades in/out with walking speed
       const pace = Math.sin(Math.PI * u);
-      camera.position.y += Math.abs(Math.sin((ms / 1000) * Math.PI * 1.9)) * 0.07 * pace;
+      camera.position.y += Math.abs(Math.sin((ms / 1000) * Math.PI * 1.0)) * 0.06 * pace;
       // look where we're walking, then settle on the doors
       W.curve.getTangentAt(e, tmp);
       tmp.y = 0;
@@ -479,8 +486,8 @@ function init() {
     hall.intensity = 30 + 90 * doorK;
     porticoLight.intensity = 45 + 60 * doorK;
     if (flash) flash.style.opacity = String(smooth(W.enterAt + W.enterMs * 0.4, W.endMs, ms));
-    // the verse (QS. Az-Zariyat 49) overlays the walk and the doors opening, fading
-    // out as the camera steps through the doorway (~80% of the way in)
+    // the verse (QS. Az-Zariyat 49) overlays the whole walk, fading as the camera
+    // steps through the doorway (~80% of the way in); our story follows inside
     gate.classList.toggle('show-ayat', ms >= 500 && ms < W.enterAt + W.enterMs * 0.8);
     if (ms >= W.endMs) startArrive();
   }
@@ -490,7 +497,7 @@ function init() {
     state = 'arrive';
     arrive = { start: performance.now(), entered: false };
     setViewShift(0);
-    gate.classList.remove('show-ayat');
+    gate.classList.remove('show-ayat', 'show-story');
     renderer.compile(lobby.scene, camera); // warm up shaders while the screen is white
   }
 
@@ -501,11 +508,83 @@ function init() {
       lobby.enter(camera);
     }
     if (arrive.entered && flash) flash.style.opacity = String(1 - smooth(250, ARRIVE_MS, ms));
-    if (ms >= ARRIVE_MS) {
+    // our story rises over the lobby as the flash clears; then all but the last line fade.
+    // "Dan kami ingin merayakannya bersama kalian." lingers, glides (full size) over to the
+    // RSVP button, waits while the button appears beneath it, then shrinks into it.
+    const leaveAt = STORY_AT + STORY_MS, moveAt = leaveAt + 1800, arriveAt = moveAt + 1300;
+    if (ms >= STORY_AT) gate.classList.add('show-story');
+    if (ms >= leaveAt) gate.classList.add('story-leave');
+    if (ms >= moveAt) gate.classList.add('story-fly');
+    if (ms >= leaveAt && !arrive.lingered) {
+      arrive.lingered = true;
+      lingerStoryLine();
+    }
+    if (ms >= moveAt && !arrive.moved) {
+      arrive.moved = true;
+      moveStoryToRsvp();
+    }
+    if (ms >= arriveAt) {
+      // the lobby (and its RSVP button) fades in under the line; once it's up, the line shrinks away
       state = 'lobby';
       gate.classList.add('in-lobby');
+      setTimeout(shrinkStoryIntoRsvp, 700);
     }
   }
+
+  // as the other lines fade, the last one drifts up to the centre and grows a little
+  let storyBase = null; // its untransformed centre, so the moves can be measured from it
+  let storyToRsvp = null; // translation that puts it over the RSVP button
+  function lingerStoryLine() {
+    const line = gate.querySelector('.story-line:last-child');
+    if (!line) return;
+    const r = line.getBoundingClientRect();
+    storyBase = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    const c = canvas.getBoundingClientRect();
+    line.style.transition = 'transform 1.2s cubic-bezier(.3,.7,.2,1)';
+    line.style.transform = `translateY(${c.top + c.height * 0.42 - storyBase.y}px) scale(1.12)`;
+  }
+
+  // glide over the RSVP button at full size
+  function moveStoryToRsvp() {
+    const line = gate.querySelector('.story-line:last-child');
+    if (!line || !storyBase) return;
+    const c = canvas.getBoundingClientRect();
+    tmp.copy(lobby.anchors.rsvp).project(camera);
+    storyToRsvp = {
+      x: c.left + ((tmp.x + 1) / 2) * c.width - storyBase.x,
+      y: c.top + ((1 - tmp.y) / 2) * c.height - storyBase.y,
+    };
+    line.style.transition = 'transform 1.3s cubic-bezier(.65,0,.35,1)';
+    line.style.transform = `translate(${storyToRsvp.x}px, ${storyToRsvp.y}px)`;
+  }
+
+  // the RSVP button is showing: shrink the line down into it, with the button's gold pulse
+  function shrinkStoryIntoRsvp() {
+    const line = gate.querySelector('.story-line:last-child');
+    const rsvp = gate.querySelector('.lobby-tag[data-group="rsvp"]');
+    if (line && storyToRsvp) {
+      line.style.transition = 'transform .6s cubic-bezier(.5,0,.75,0), opacity .6s ease';
+      line.style.transform = `translate(${storyToRsvp.x}px, ${storyToRsvp.y}px) scale(0.15)`;
+      line.style.opacity = '0';
+    }
+    setTimeout(() => {
+      if (rsvp) {
+        rsvp.classList.add('is-landing');
+        setTimeout(() => rsvp.classList.remove('is-landing'), 1500);
+      }
+      if (line) line.style.visibility = 'hidden'; // hide before letting the overlay go
+      gate.classList.remove('show-story', 'story-leave', 'story-fly');
+      setTimeout(() => { if (line) line.style.cssText = ''; }, 1400);
+    }, 550);
+  }
+
+  // tap while the story is up to move on sooner
+  gate.addEventListener('pointerdown', () => {
+    if (state !== 'arrive') return;
+    const ms = performance.now() - arrive.start;
+    // skip to where the last line lingers, so it still flies into the RSVP button
+    if (ms > STORY_AT + 1500 && ms < STORY_AT + STORY_MS) arrive.start = performance.now() - (STORY_AT + STORY_MS);
+  });
 
   // ---------- lobby: labelled photo groups ----------
   // rest   -> look around; hover (or on phones, always) shows each group's label
@@ -518,6 +597,13 @@ function init() {
   const COUPLE_TOUR = ['adam', 'elsa', 'together'];
   const TOUR_PAN = 15; // seconds for the pan itself
   const tourCard = (u) => (u < 0.5 ? 'groom' : u < 1.5 ? 'bride' : 'couple');
+  const CARD_PHOTO = { groom: 'adam', bride: 'elsa', couple: 'together' };
+  // wide screens: the couple cards ride along on the photo's right edge instead of the screen's
+  const cardBeside = () => canvas.clientWidth / canvas.clientHeight >= 1 && canvas.clientWidth > 760;
+  const cardReserve = () => {
+    const W = canvas.clientWidth;
+    return cardBeside() ? (Math.min(380, 0.36 * W) + 56) / W : 0;
+  };
   const lobbyUi = document.getElementById('lobbyUi');
   const lobbyHint = document.getElementById('lobbyHint');
   const lobbyBack = document.getElementById('lobbyBack');
@@ -572,12 +658,16 @@ function init() {
   function openGroup(group, entry) {
     if (group === 'couple') {
       setView({ name: 'couple', card: 'groom' });
-      lobby.goTour(camera, COUPLE_TOUR, 'caption', 1.8, TOUR_PAN);
+      lobby.goTour(camera, COUPLE_TOUR, 'caption', 1.8, TOUR_PAN, cardReserve());
       showCard('groom', 1300);
     } else if (group === 'map') {
       setView({ name: 'map' });
       lobby.goItem(camera, 'map', 'tall', 1.6);
       showCard('map', 1100);
+    } else if (group === 'gift') {
+      setView({ name: 'gift' });
+      lobby.goItem(camera, 'gift', 'tall', 1.6);
+      showCard('gift', 1100);
     } else if (group === 'rsvp') {
       setView({ name: 'rsvp' });
       // measure the RSVP card, then frame the door to sit just inside it
@@ -608,7 +698,7 @@ function init() {
   // tap during the pan: jump ahead to the last photo; tap once there: leave
   function skipTour() {
     if (lobby.tourDone()) return back();
-    lobby.goItem(camera, COUPLE_TOUR[COUPLE_TOUR.length - 1], 'caption', 1.4);
+    lobby.goItem(camera, COUPLE_TOUR[COUPLE_TOUR.length - 1], 'caption', 1.4, cardReserve());
     view.card = tourCard(COUPLE_TOUR.length - 1);
     showCard(view.card, 900);
   }
@@ -620,6 +710,26 @@ function init() {
     showCard(null);
   }
 
+  // Keep the couple card attached to the right side of its photo (wide screens), following
+  // the photo as the camera pans; everywhere else the stylesheet places the card.
+  function placeCoupleCard() {
+    const photo = view.name === 'couple' && cardBeside() && CARD_PHOTO[view.card];
+    if (!photo) {
+      if (card.dataset.beside) {
+        delete card.dataset.beside;
+        card.style.left = card.style.top = card.style.right = '';
+      }
+      return;
+    }
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    const r = lobby.screenRect(camera, photo, W, H);
+    const cw = card.offsetWidth;
+    card.dataset.beside = '1';
+    card.style.right = 'auto';
+    card.style.left = `${Math.min(W - cw - 16, r.right + 24)}px`;
+    card.style.top = `${Math.min(H - 120, Math.max(120, (r.top + r.bottom) / 2))}px`;
+  }
+
   // called every frame while in the lobby
   function tickLobby() {
     if (view.name === 'couple') {
@@ -629,6 +739,7 @@ function init() {
         showCard(view.card, 250);
       }
     }
+    placeCoupleCard();
     // float each group's label over its photos
     const w = canvas.clientWidth, h = canvas.clientHeight;
     const showAll = isTouch && view.name === 'rest' && lobby.settled();
@@ -723,7 +834,7 @@ function init() {
       const dist = 6.6 + 0.5;
       const halfH = Math.atan(Math.tan(Math.atan(2.2 / dist)) / camera.aspect);
       walk.doorFov = Math.max(40, THREE.MathUtils.radToDeg(halfH * 2));
-      walk.walkMs = Math.min(7500, Math.max(5500, 3200 + walk.curve.getLength() * 35));
+      walk.walkMs = Math.min(15000, Math.max(11000, 6400 + walk.curve.getLength() * 70)); // unhurried: half the original pace
       walk.doorAt = walk.walkMs - 500;
       walk.doorMs = 1700;
       walk.enterAt = walk.walkMs + 1000;

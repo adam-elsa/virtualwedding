@@ -69,6 +69,7 @@
     <button class="lobby-tag" data-group="map" type="button">Lokasi &amp; Tempat</button>
     <button class="lobby-tag lobby-tag--cta" data-group="rsvp" type="button">RSVP</button>
     <button class="lobby-tag" data-group="story" type="button">Cerita Kami</button>
+    <button class="lobby-tag" data-group="gift" type="button">Amplop Digital</button>
     <!-- info card beside the photo being viewed; data-show picks the section -->
     <div class="lobby-card" id="lobbyCard">
       <section data-card="groom">
@@ -86,6 +87,18 @@
         <h3 class="card-name">Elsa</h3>
         <p class="card-sub">Putri dari</p>
         <p class="card-parents">Bapak Muhammad Hasan<br>&amp; Ibu Damini</p>
+      </section>
+      <!-- same as the invitation's "Amplop Digital" section -->
+      <section data-card="gift">
+        <p class="eyebrow">Amplop Digital</p>
+        <h3 class="card-title">Tanda Kasih</h3>
+        <p class="card-sub">Doa restu Bapak/Ibu/Saudara/i adalah hadiah terindah bagi kami. Namun jika ingin memberi tanda kasih, dapat melalui:</p>
+        <div class="card-gift">
+          <p class="gift-bank">BCA</p>
+          <p class="gift-number" id="lobbyGiftNumber">8691241238</p>
+          <p class="gift-holder">a.n. Elsa</p>
+        </div>
+        <button class="btn-solid card-btn" id="lobbyCopyGift" type="button">Salin Nomor Rekening</button>
       </section>
       <section data-card="rsvp">
         <p class="eyebrow">RSVP</p>
@@ -119,7 +132,11 @@
     </div>
     <div class="lobby-bottom">
       <button class="btn-outline lobby-back" id="lobbyBack" type="button">← Kembali</button>
-      <button class="btn-open lobby-next" id="lobbyNext" type="button">Lanjut ke Undangan</button>
+      <!-- the 3D lobby is the invitation; this is the fallback to the plain page -->
+      <button class="btn-outline lobby-next" id="lobbyNext" type="button">
+        Buka Undangan Simple
+        <small>(jika kesulitan di tampilan sekarang)</small>
+      </button>
     </div>
   </div>
   <div class="gate-flash" aria-hidden="true"></div>
@@ -130,15 +147,23 @@
     <p class="ayat-id">“Dan segala sesuatu Kami ciptakan berpasang-pasangan agar kamu mengingat (kebesaran Allah).”</p>
     <p class="ayat-src">QS. Az-Zariyat: 49</p>
   </div>
+  <!-- our story, line by line, over the lobby just after stepping inside -->
+  <div class="gate-story">
+    <span class="ayat-ornament" aria-hidden="true">❧</span>
+    <p class="story-line">Perjalanan kami tidak singkat.</p>
+    <p class="story-line">Ada tawa, ada tangis, ada jarak, ada rindu.</p>
+    <p class="story-line">Di setiap musimnya, kami selalu memilih satu sama lain.</p>
+    <p class="story-line">Hari ini, kami memilih untuk selamanya.</p>
+    <p class="story-line">Dan kami ingin merayakannya bersama kalian.</p>
+  </div>
 </section>
 
 <!-- music control, hidden until opened -->
 <button id="musicToggle" class="music-toggle" type="button" aria-label="Toggle music" hidden>
   <span class="music-icon playing">♪</span>
 </button>
-<audio id="bgm" loop preload="none">
-  <source src="assets/audio/backsound.mp3" type="audio/mpeg">
-</audio>
+<!-- track picked in script.js: guitar on phones/tablets, orchestra on computers -->
+<audio id="bgm" loop preload="none"></audio>
 
 <main id="siteMain" class="site-main" hidden>
 
@@ -204,8 +229,11 @@
         </figure>
       </div>
       <p class="story-text reveal">
-        Dari pertemuan yang sederhana, tumbuh kebersamaan yang perlahan menjadi kepastian.
-        Kini, kami melangkah menuju babak baru — dan kami ingin merayakannya bersama kalian.
+        Perjalanan kami tidak singkat.
+        Ada tawa, ada tangis, ada jarak, ada rindu.
+        Di setiap musimnya, kami selalu memilih satu sama lain.
+        Hari ini, kami memilih untuk selamanya.
+        Dan kami ingin merayakannya bersama kalian.
       </p>
     </div>
   </section>
@@ -297,7 +325,7 @@
       <div class="gift-card">
         <p class="gift-bank">BCA</p>
         <p class="gift-number" id="giftNumber">8691241238</p>
-        <p class="gift-holder">a.n. [Nama Pemilik Rekening]</p>
+        <p class="gift-holder">a.n. Elsa</p>
         <button class="btn-outline" id="copyGift" type="button">Salin Nomor Rekening</button>
       </div>
     </div>

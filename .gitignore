@@ -23,3 +23,5 @@
 hs_err_pid*
 replay_pid*
 /media
+# full-quality music sources; the site uses the re-encoded copies in assets/audio
+/music

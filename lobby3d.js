@@ -104,14 +104,20 @@ export function createLobby() {
   scene.add(slats);
 
   // warm cove light washing down each wall + a glowing line at the top
-  const wash = new THREE.MeshBasicMaterial({ map: T.wash, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+  const wash = new THREE.MeshBasicMaterial({
+    map: T.wash, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, // never flicker against the wall behind
+  });
   const washes = [
     [D, -W / 2 + 0.12, 0, Math.PI / 2], [18, W / 2 - 0.12, 3, -Math.PI / 2],
     [16, -2, -D / 2 + 0.03, 0], [6, 5.88, -9, -Math.PI / 2], [4, 8, -5.88, 0],
   ];
   for (const [len, x, z, ry] of washes) {
-    add(new THREE.PlaneGeometry(len, 2.6), wash, x, H - 1.3, z).rotation.y = ry;
-    add(new THREE.PlaneGeometry(len, 0.06), M.glow, x, SLAT_H + 0.05, z).rotation.y = ry;
+    // step each layer out along the wall's normal so no two surfaces share a plane
+    // (they used to z-fight): wall/slats -> wash (+5 cm) -> glowing line (+10 cm)
+    const nx = Math.sin(ry), nz = Math.cos(ry);
+    add(new THREE.PlaneGeometry(len, 2.6), wash, x + nx * 0.05, H - 1.3, z + nz * 0.05).rotation.y = ry;
+    add(new THREE.PlaneGeometry(len, 0.06), M.glow, x + nx * 0.1, SLAT_H + 0.05, z + nz * 0.1).rotation.y = ry;
   }
 
   // linear ceiling lights (black channels dotted with LEDs)
@@ -199,6 +205,38 @@ export function createLobby() {
   scene.add(lamp);
   sprite(-9.1, 1.72, 1.9, 1.4, 0xffd7a0, 0.8);
   plant(-9.0, 4.4, 1.15);
+
+  // ---------- kotak angpao (left wall, between the sofa and the photo by the door) ----------
+  // a burgundy-draped table with a cream gift box: ribbon band, bow with tails, slot, two roses
+  const GIFT = { x: -9.45, z: -7.0 };
+  const clothMat = std(0x8c1d2c, { roughness: 0.9 });
+  const boxMat = std(0xf2ece0, { roughness: 0.7 });
+  const ribbonMat = std(0x7a1a28, { roughness: 0.45 });
+  const gift = new THREE.Group();
+  boxB(0.8, 0.72, 0.8, clothMat, 0, 0, 0, gift);                 // floor-length tablecloth
+  boxB(0.88, 0.05, 0.88, clothMat, 0, 0.7, 0, gift);             // its overhanging top
+  add(new THREE.CylinderGeometry(0.36, 0.36, 0.012, 18), std(0xf4eee2), 0, 0.756, 0, gift); // lace doily
+  boxB(0.56, 0.4, 0.42, boxMat, 0, 0.762, 0, gift);              // box
+  boxB(0.6, 0.07, 0.46, boxMat, 0, 1.15, 0, gift);               // lid
+  boxB(0.606, 0.05, 0.466, ribbonMat, 0, 1.1, 0, gift);          // ribbon band round the lid
+  boxB(0.07, 0.34, 0.01, ribbonMat, 0, 0.77, 0.216, gift);       // ribbon down the front
+  for (const s of [-1, 1]) {
+    const loop = add(new THREE.SphereGeometry(0.07, 6, 4), ribbonMat, s * 0.075, 1.08, 0.24, gift);
+    loop.scale.set(1.5, 0.75, 0.35);
+    loop.rotation.z = s * 0.35;
+    const tail = boxB(0.035, 0.3, 0.008, ribbonMat, s * 0.045, 0.8, 0.236, gift);
+    tail.rotation.z = s * 0.22;
+  }
+  add(new THREE.SphereGeometry(0.03, 6, 4), ribbonMat, 0, 1.08, 0.25, gift);        // knot
+  boxB(0.22, 0.006, 0.03, M.black, 0, 1.22, -0.02, gift);                           // slot on the lid
+  for (const [x, c] of [[-0.17, 0xe7a1a1], [0.17, 0xf6ead8]]) {
+    add(new THREE.IcosahedronGeometry(0.04, 0), std(c, { roughness: 0.6 }), x, 1.25, 0.06, gift);   // rose
+    const leaf = add(new THREE.SphereGeometry(0.03, 5, 3), M.leaf2, x + 0.05 * Math.sign(-x), 1.235, 0.08, gift);
+    leaf.scale.set(1.4, 0.35, 0.8);
+  }
+  gift.position.set(GIFT.x, 0, GIFT.z);
+  gift.rotation.y = Math.PI / 2; // front faces into the room
+  scene.add(gift);
   plant(9.0, 2.3, 0.95);
 
   function plant(x, z, sc) {
@@ -236,9 +274,13 @@ export function createLobby() {
     scene.add(g);
     const frameMat = M.frame.clone();
     const frame = add(new THREE.BoxGeometry(1, 1, 0.06), frameMat, 0, 0, 0, g);
-    const mat = add(new THREE.PlaneGeometry(1, 1), M.mat, 0, 0, 0.035, g);
-    const picMat = new THREE.MeshBasicMaterial({ color: texture ? 0xffffff : 0x8a8580, map: texture || null, toneMapped: false });
-    const pic = add(new THREE.PlaneGeometry(1, 1), picMat, 0, 0, 0.04, g);
+    // frame box front face at +3 cm, white mat just in front, photo well clear of both (no z-fighting)
+    const mat = add(new THREE.PlaneGeometry(1, 1), M.mat, 0, 0, 0.04, g);
+    const picMat = new THREE.MeshBasicMaterial({
+      color: texture ? 0xffffff : 0x8a8580, map: texture || null, toneMapped: false,
+      polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
+    });
+    const pic = add(new THREE.PlaneGeometry(1, 1), picMat, 0, 0, 0.07, g);
     const bar = add(new THREE.BoxGeometry(1, 0.05, 0.1), M.black, 0, 0, 0.12, g);
     const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffe0b0, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
     g.add(halo);
@@ -280,6 +322,13 @@ export function createLobby() {
     w: 6.2, h: 3.8, glow: [deskMat, doorFrameMat, doorMat],
   };
   for (const m of [desk, doorFrame, doorLeaf]) { m.userData.entry = entries.rsvp; pickables.push(m); }
+  // the kotak angpao opens "Amplop Digital"
+  entries.gift = {
+    id: 'gift', group: 'gift',
+    center: new THREE.Vector3(GIFT.x, 0.9, GIFT.z), normal: new THREE.Vector3(1, 0, 0),
+    w: 1.1, h: 1.5, glow: [boxMat, clothMat],
+  };
+  gift.traverse((m) => { if (m.isMesh) { m.userData.entry = entries.gift; pickables.push(m); } });
 
   // ---------- camera ----------
   const UP = new THREE.Vector3(0, 1, 0);
@@ -327,13 +376,18 @@ export function createLobby() {
 
   // Camera facing a wall item squarely. `layout` leaves room for an info card:
   // 'center' (no card), 'caption' (card beside/below), 'tall' (big card below on phones).
-  function poseFor(camera, e, layout) {
+  // `reserve` (wide screens): fraction of the screen width kept free on the right for a card
+  // attached beside the photo; the photo then fills everything to its left.
+  function poseFor(camera, e, layout, reserve = 0) {
     const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     const aspect = camera.aspect;
     let rx = 0, ry = 0, hx = 0.86, hy = 0.8; // where the frame lands on screen (NDC) and how much room it gets
-    let zoom = e.group === 'map' || e.group === 'rsvp' ? 1 : 1.3;
+    let zoom = e.group === 'map' || e.group === 'rsvp' || e.group === 'gift' ? 1 : 1.3;
     if (layout !== 'center') {
-      if (aspect >= 1) { rx = -0.38; hx = 0.54; hy = 0.78; }
+      if (aspect >= 1 && reserve > 0) {
+        const left = -0.92, right = 1 - 2 * reserve;
+        rx = (left + right) / 2; hx = (right - left) / 2; hy = 0.84; zoom = 1;
+      } else if (aspect >= 1) { rx = -0.38; hx = 0.54; hy = 0.78; }
       else if (layout === 'tall') { ry = 0.6; hy = 0.3; hx = 0.9; }
       // phones: photo on the left, slim card on the right (it only covers the wall at the photo's edge)
       else { rx = -0.3; hx = 0.68; hy = 0.8; zoom = 1; }
@@ -415,8 +469,13 @@ export function createLobby() {
       map: new THREE.Vector3(MAP_BOARD.pos[0], 4.2, -11.8),
       rsvp: new THREE.Vector3(DESK_X, 0.55, -8.64), // middle of the desk's black front: gold on black stands out
       story: new THREE.Vector3(8.0, 4.5, -5.7),
+      gift: new THREE.Vector3(GIFT.x, 1.55, GIFT.z),
     },
     enter(camera) {
+      // the room is ~24 m deep: a tight far plane gives the depth buffer far more precision
+      // than the outdoor scene's 600 m, which keeps close layers (frame, mat, photo) from flickering
+      camera.far = 70;
+      camera.updateProjectionMatrix();
       fitCamera(camera);
       camera.position.copy(cam.start);
       camera.quaternion.identity();
@@ -452,8 +511,23 @@ export function createLobby() {
       camera.quaternion.slerp(raw.q, a);
     },
     settled() { return cam.k >= 1; },
+    // where an item's frame is on screen right now, in pixels (for cards attached beside it)
+    screenRect(camera, id, w, h) {
+      const e = entries[id];
+      const right = new THREE.Vector3().crossVectors(e.normal.clone().negate(), UP).normalize();
+      let l = Infinity, r = -Infinity, t = Infinity, b = -Infinity;
+      for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+        const p = e.center.clone()
+          .addScaledVector(right, sx * (e.w / 2 + 0.18))
+          .addScaledVector(UP, sy * (e.h / 2 + 0.18))
+          .project(camera);
+        const px = ((p.x + 1) / 2) * w, py = ((1 - p.y) / 2) * h;
+        l = Math.min(l, px); r = Math.max(r, px); t = Math.min(t, py); b = Math.max(b, py);
+      }
+      return { left: l, right: r, top: t, bottom: b };
+    },
     goRest(camera, dur = 1.4) { glide(camera, null, dur); },
-    goItem(camera, id, layout, dur) { glide(camera, poseFor(camera, entries[id], layout), dur); },
+    goItem(camera, id, layout, dur, reserve) { glide(camera, poseFor(camera, entries[id], layout, reserve), dur); },
     goStory(camera, dur = 1.8) { glide(camera, storyPose(camera), dur); },
     // Look at the door from the right, turned slightly left (the map and desk stay in view),
     // sized so the door fills about `fx` x `fy` of the screen and lands at `ndcX` across it.
@@ -483,8 +557,8 @@ export function createLobby() {
       return { x: (v.x + 1) / 2, y: (1 - v.y) / 2 };
     },
     // glide to the first item, then pan continuously through the rest
-    goTour(camera, ids, layout, glideDur, panDur) {
-      const poses = ids.map((id) => poseFor(camera, entries[id], layout));
+    goTour(camera, ids, layout, glideDur, panDur, reserve) {
+      const poses = ids.map((id) => poseFor(camera, entries[id], layout, reserve));
       glide(camera, poses[0], glideDur);
       cam.tour = makeTour(poses, panDur);
     },
