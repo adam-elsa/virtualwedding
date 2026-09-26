@@ -375,14 +375,14 @@ function init() {
   }
 
   // ---------- animation state ----------
-  // intro -> idle -> walk (doors open, white flash) -> ayat (verse on the flash)
+  // intro -> idle -> walk (verse overlaid on the way; doors open, white flash) -> arrive
   // -> lobby (look around, tap photos) -> leave (resolves flyIn's promise)
   const clock = new THREE.Clock();
   const INTRO = 7; // seconds of slow zoom-in from the left
-  const AYAT_HOLD = 6500; // ms the verse stays up (a tap skips ahead)
+  const ARRIVE_MS = 1900; // white flash -> lobby
   let state = 'intro';
   let walk = null;
-  let ayat = null;
+  let arrive = null;
   let active = scene;
   let raf = 0;
   const flash = gate.querySelector('.gate-flash');
@@ -434,8 +434,8 @@ function init() {
       setViewShift(baseShift());
     } else if (state === 'walk') {
       stepWalk(performance.now() - walk.start);
-    } else if (state === 'ayat') {
-      stepAyat(performance.now() - ayat.start, t);
+    } else if (state === 'arrive') {
+      stepArrive(performance.now() - arrive.start);
     }
     if (active === lobby.scene) lobby.update(camera, t, dt, pointer);
     if (state === 'lobby') tickLobby();
@@ -479,53 +479,45 @@ function init() {
     hall.intensity = 30 + 90 * doorK;
     porticoLight.intensity = 45 + 60 * doorK;
     if (flash) flash.style.opacity = String(smooth(W.enterAt + W.enterMs * 0.4, W.endMs, ms));
-    if (ms >= W.endMs) startAyat();
+    // the verse (QS. Az-Zariyat 49) overlays the walk and the doors opening, fading
+    // out as the camera steps through the doorway (~80% of the way in)
+    gate.classList.toggle('show-ayat', ms >= 500 && ms < W.enterAt + W.enterMs * 0.8);
+    if (ms >= W.endMs) startArrive();
   }
 
-  // the verse fades in over the white flash; behind it we swap to the lobby
-  function startAyat() {
-    state = 'ayat';
-    ayat = { start: performance.now(), hidden: false, entered: false };
+  // through the doors: under the white flash, swap to the lobby, then let the flash fade
+  function startArrive() {
+    state = 'arrive';
+    arrive = { start: performance.now(), entered: false };
     setViewShift(0);
-    gate.classList.add('show-ayat');
+    gate.classList.remove('show-ayat');
     renderer.compile(lobby.scene, camera); // warm up shaders while the screen is white
   }
 
-  function stepAyat(ms, t) {
-    if (!ayat.hidden && ms >= AYAT_HOLD) {
-      ayat.hidden = true;
-      gate.classList.remove('show-ayat');
-    }
-    if (!ayat.entered && ms >= AYAT_HOLD + 900) {
-      ayat.entered = true;
+  function stepArrive(ms) {
+    if (!arrive.entered && ms >= 250) {
+      arrive.entered = true;
       active = lobby.scene;
       lobby.enter(camera);
     }
-    if (ayat.entered && flash) flash.style.opacity = String(1 - smooth(AYAT_HOLD + 900, AYAT_HOLD + 2900, ms));
-    if (ms >= AYAT_HOLD + 2900) {
+    if (arrive.entered && flash) flash.style.opacity = String(1 - smooth(250, ARRIVE_MS, ms));
+    if (ms >= ARRIVE_MS) {
       state = 'lobby';
       gate.classList.add('in-lobby');
     }
   }
 
-  // tap during the verse to move on sooner
-  gate.addEventListener('pointerdown', () => {
-    if (state !== 'ayat') return;
-    const ms = performance.now() - ayat.start;
-    if (ms > 1500 && ms < AYAT_HOLD) ayat.start = performance.now() - AYAT_HOLD;
-  });
-
   // ---------- lobby: labelled photo groups ----------
   // rest   -> look around; hover (or on phones, always) shows each group's label
-  // couple -> tour: pans Adam (card) -> together -> Elsa (card); a tap skips to Elsa
+  // couple -> tour: pans Adam (card) -> Elsa (card) -> together (card); a tap skips to the end
   // map    -> map board + card with Google Maps and the Akad/Resepsi times
   // rsvp   -> desk / door / photo by the door: face the door, RSVP card over it
   // story  -> tap a photo: zoom into it; the label: overview of the corner (back returns there)
-  // couple tour: one continuous pan Adam -> together -> Elsa (slow on the
-  // portraits, quicker through the middle); the card follows the camera
-  const COUPLE_TOUR = ['adam', 'together', 'elsa'];
-  const TOUR_PAN = 13; // seconds for the pan itself
-  const tourCard = (u) => (u < 0.55 ? 'groom' : u < 1.45 ? 'couple' : 'bride');
+  // couple tour: one continuous pan Adam -> Elsa -> together, lingering on each photo
+  // and quicker only between them; the card follows the camera
+  const COUPLE_TOUR = ['adam', 'elsa', 'together'];
+  const TOUR_PAN = 15; // seconds for the pan itself
+  const tourCard = (u) => (u < 0.5 ? 'groom' : u < 1.5 ? 'bride' : 'couple');
   const lobbyUi = document.getElementById('lobbyUi');
   const lobbyHint = document.getElementById('lobbyHint');
   const lobbyBack = document.getElementById('lobbyBack');
@@ -613,12 +605,12 @@ function init() {
     }
   }
 
-  // tap during the pan: jump ahead to Elsa; tap once there: leave
+  // tap during the pan: jump ahead to the last photo; tap once there: leave
   function skipTour() {
     if (lobby.tourDone()) return back();
     lobby.goItem(camera, COUPLE_TOUR[COUPLE_TOUR.length - 1], 'caption', 1.4);
-    view.card = 'bride';
-    showCard('bride', 900);
+    view.card = tourCard(COUPLE_TOUR.length - 1);
+    showCard(view.card, 900);
   }
 
   function back() {
@@ -650,9 +642,12 @@ function init() {
       const cx = Math.min(w - half, Math.max(half, x));
       const edge = x < 0 ? 'left' : x > w ? 'right' : '';
       tag.dataset.edge = edge;
-      const show = inFront && view.name === 'rest' && (showAll || (hovered === group && !edge));
+      // the RSVP button is always there; the other labels appear on hover (always on phones)
+      const show = inFront && view.name === 'rest' && (showAll || group === 'rsvp' || (hovered === group && !edge));
       tag.classList.toggle('is-visible', show);
-      tag.style.transform = `translate(${cx}px, ${((1 - tmp.y) / 2) * h}px) translate(-50%, -100%)`;
+      // labels float just above their anchor; the RSVP button is centred on the desk front
+      const lift = group === 'rsvp' ? '-50%' : '-100%';
+      tag.style.transform = `translate(${cx}px, ${((1 - tmp.y) / 2) * h}px) translate(-50%, ${lift})`;
     }
   }
 
@@ -728,7 +723,7 @@ function init() {
       const dist = 6.6 + 0.5;
       const halfH = Math.atan(Math.tan(Math.atan(2.2 / dist)) / camera.aspect);
       walk.doorFov = Math.max(40, THREE.MathUtils.radToDeg(halfH * 2));
-      walk.walkMs = Math.min(7000, Math.max(4500, 3200 + walk.curve.getLength() * 35));
+      walk.walkMs = Math.min(7500, Math.max(5500, 3200 + walk.curve.getLength() * 35));
       walk.doorAt = walk.walkMs - 500;
       walk.doorMs = 1700;
       walk.enterAt = walk.walkMs + 1000;
