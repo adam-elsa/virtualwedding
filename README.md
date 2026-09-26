@@ -9,11 +9,12 @@ The opening screen is a low-poly 3D model of the Golden Boutique Hotel ([gate3d.
 
 - **Kedua Mempelai**: a camera tour of Adam's portrait, the couple photo, then Elsa's portrait, with cards naming each and their parents.
 - **Lokasi & Tempat**: the map board, plus a card with a Google map, the Akad/Resepsi times, and a "Buka Google Maps" button.
-- **Cerita Kami**: turns to the right-wall gallery, where each photo opens on its own.
+- **Cerita Kami**: the photos on the slatted column and the right wall. Clicking any of them zooms in; clicking the label shows all of them together.
+- **RSVP**: hovering the reception desk, the door, or the photo beside the door lights all three and shows an RSVP button. It turns to face the door and opens an RSVP form over it, prefilled with the guest's name from `?to=`. It submits the same way as the invitation's RSVP form (see below).
 
 "Lanjut ke Undangan" opens the invitation. If WebGL or the CDN isn't available, the plain gate still works.
 
-- **Photos:** listed in `PHOTOS` at the top of [lobby3d.js](lobby3d.js) (file, group, wall position, size). To add more to the right-wall gallery, add entries with `group: 'gallery'`.
+- **Photos:** listed in `PHOTOS` at the top of [lobby3d.js](lobby3d.js) (file, group, wall position, size). To add more to "Cerita Kami", add entries with `group: 'story'` on the right wall (x = 9.84).
 - **Card text** (names, parents, times) is in the `lobby-card` block of [index.html](index.html).
 
 ## Run locally

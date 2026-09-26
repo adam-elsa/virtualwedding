@@ -67,6 +67,7 @@
     <!-- labels floating over each photo group (positioned by gate3d.js) -->
     <button class="lobby-tag" data-group="couple" type="button">Kedua Mempelai</button>
     <button class="lobby-tag" data-group="map" type="button">Lokasi &amp; Tempat</button>
+    <button class="lobby-tag lobby-tag--cta" data-group="rsvp" type="button">RSVP</button>
     <button class="lobby-tag" data-group="story" type="button">Cerita Kami</button>
     <!-- info card beside the photo being viewed; data-show picks the section -->
     <div class="lobby-card" id="lobbyCard">
@@ -74,7 +75,7 @@
         <p class="eyebrow">Mempelai Pria</p>
         <h3 class="card-name">Adam</h3>
         <p class="card-sub">Putra dari</p>
-        <p class="card-parents">Bapak Badru Kamal<br>&amp; Ibu Ika Kurnia</p>
+        <p class="card-parents">Bapak Badru Kamal<br>&amp; Ibu Ika Kurniaputri</p>
       </section>
       <section data-card="couple">
         <p class="eyebrow">Kedua Mempelai</p>
@@ -85,6 +86,22 @@
         <h3 class="card-name">Elsa</h3>
         <p class="card-sub">Putri dari</p>
         <p class="card-parents">Bapak Muhammad Hasan<br>&amp; Ibu Damini</p>
+      </section>
+      <section data-card="rsvp">
+        <p class="eyebrow">RSVP</p>
+        <h3 class="card-title">Konfirmasi Kehadiran</h3>
+        <form class="card-form" id="lobbyRsvpForm">
+          <input type="text" name="name" placeholder="Nama" aria-label="Nama" required autocomplete="name">
+          <select name="attendance" aria-label="Kehadiran" required>
+            <option value="">Kehadiran...</option>
+            <option value="Hadir">Saya akan hadir</option>
+            <option value="Tidak Hadir">Maaf, tidak bisa hadir</option>
+          </select>
+          <label class="card-row">Jumlah tamu <input type="number" name="guests" min="1" max="10" value="1"></label>
+          <textarea name="message" rows="2" placeholder="Doa &amp; ucapan untuk kami (opsional)" aria-label="Doa dan ucapan"></textarea>
+          <button type="submit" class="btn-solid">Kirim</button>
+          <p class="rsvp-status" role="status"></p>
+        </form>
       </section>
       <section data-card="map">
         <p class="eyebrow">Lokasi &amp; Tempat</p>
@@ -161,7 +178,7 @@
         <article class="couple-card">
           <div class="couple-photo"><img src="assets/img/02_ProfileAdam.jpg" alt="Adam" loading="lazy"></div>
           <h3 class="couple-name">Adam</h3>
-          <p class="couple-parents">Putra dari<br><span>Bapak Badru Kamal &amp; Ibu Ika Kurnia</span></p>
+          <p class="couple-parents">Putra dari<br><span>Bapak Badru Kamal &amp; Ibu Ika Kurniaputri</span></p>
         </article>
         <div class="couple-amp" aria-hidden="true">&amp;</div>
         <article class="couple-card">

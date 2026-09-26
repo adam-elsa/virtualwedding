@@ -226,6 +226,10 @@ a{color:inherit;}
 .lobby-ui.is-focused .lobby-back{display:inline-block;}
 .lobby-ui.is-focused .lobby-next, .lobby-ui.is-focused .lobby-top{display:none;}
 .lobby-ui .btn-outline{background:rgba(21,19,26,0.55);backdrop-filter:blur(4px);}
+/* wide screens: with a card open, "Kembali" sits under the card, off the photo */
+@media (min-aspect-ratio:1/1) and (min-width:761px){
+  .lobby-ui.has-card .lobby-bottom{align-self:flex-end;width:min(380px,36vw);margin-right:6vw;justify-content:center;}
+}
 .lobby-story-head{display:none;}
 .lobby-ui.is-story .lobby-story-head{display:block;}
 
@@ -253,6 +257,15 @@ a{color:inherit;}
 .lobby-tag.is-visible{opacity:1;pointer-events:auto;}
 .lobby-tag[data-edge="left"]::before{content:'← ';}
 .lobby-tag[data-edge="right"]::after{content:' →';}
+/* RSVP reads as a button, not a label */
+.lobby-tag--cta{
+  background:linear-gradient(135deg,var(--gold-soft),var(--gold));
+  color:#211a10;
+  border:none;
+  font-weight:600;
+  padding:10px 22px;
+  box-shadow:0 8px 22px rgba(203,161,92,0.35);
+}
 
 /* info card: beside the photo on wide screens, below it on phones */
 .lobby-card{
@@ -277,7 +290,8 @@ a{color:inherit;}
 .lobby-card[data-show="groom"] [data-card="groom"],
 .lobby-card[data-show="couple"] [data-card="couple"],
 .lobby-card[data-show="bride"] [data-card="bride"],
-.lobby-card[data-show="map"] [data-card="map"]{display:block;}
+.lobby-card[data-show="map"] [data-card="map"],
+.lobby-card[data-show="rsvp"] [data-card="rsvp"]{display:block;}
 .card-name{
   font-family:var(--font-script);
   font-weight:400;
@@ -297,8 +311,32 @@ a{color:inherit;}
 .card-times span{display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);}
 .card-times strong{display:block;font-family:var(--font-display);font-weight:500;font-size:22px;color:var(--ink);margin-top:2px;}
 .card-btn{display:inline-block;}
+/* RSVP: centred on screen, over the door */
+.lobby-card.is-center{
+  left:50%;right:auto;top:50%;bottom:auto;
+  width:min(380px,calc(100vw - 32px));
+  transform:translate(-50%,-46%);
+}
+.lobby-card.is-center.is-open{transform:translate(-50%,-50%);}
+.card-form{display:flex;flex-direction:column;gap:10px;margin-top:14px;text-align:left;}
+.card-form input, .card-form select, .card-form textarea{
+  width:100%;
+  font-family:var(--font-sans);
+  font-size:14px;
+  color:var(--ink);
+  background:rgba(255,255,255,0.06);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:10px 12px;
+}
+.card-form select option{color:#211a10;}
+.card-form textarea{resize:none;}
+.card-row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:var(--ink-dim);}
+.card-row input{width:84px;text-align:center;}
+.card-form .btn-solid{align-self:center;margin-top:4px;}
+.card-form .rsvp-status{margin:0;text-align:center;font-size:13px;min-height:1em;}
 
-@media (max-aspect-ratio:1/1){
+@media (max-aspect-ratio:1/1), (max-width:760px){
   .lobby-card{
     left:16px;right:16px;width:auto;
     top:auto;bottom:calc(max(5vh, env(safe-area-inset-bottom)) + 64px);

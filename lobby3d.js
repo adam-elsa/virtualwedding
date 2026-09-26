@@ -12,19 +12,23 @@ const SLAT_H = H - 0.4; // leave a gap at the top for the warm cove light
 // Wall items, grouped by what clicking them opens:
 //   couple  -> "Kedua Mempelai" tour (Adam -> together -> Elsa)
 //   map     -> "Lokasi & Tempat" (map + Akad/Resepsi times)
-//   story   -> "Cerita Kami": turn to the gallery on the right wall
-//   gallery -> right-wall photos, each opens on its own
+//   story   -> "Cerita Kami": the column + right-wall photos; each zooms in on its own,
+//              the label shows them all together
+//   rsvp    -> RSVP card; the photo by the door joins the reception desk + door (set up below)
 const PHOTOS = [
-  { id: 'venue', group: 'couple', src: 'assets/img/04_Venue.jpg', pos: [-9.84, 2.6, -4.2], normal: [1, 0, 0], max: 2.4 },
-  { id: 'adam', group: 'couple', src: 'assets/img/02_ProfileAdam.jpg', pos: [-9.84, 2.6, -8.4], normal: [1, 0, 0], max: 2.4 },
-  { id: 'together', group: 'couple', src: 'assets/img/01_Banner.jpg', pos: [-4.0, 2.65, -11.94], normal: [0, 0, 1], max: 3.0 },
-  { id: 'elsa', group: 'couple', src: 'assets/img/02_ProfileElsa.jpg', pos: [-0.5, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
+  { id: 'venue', group: 'rsvp', src: 'assets/img/04_Venue.jpg', pos: [-9.84, 2.6, -9.6], normal: [1, 0, 0], max: 2.5 },
+  { id: 'adam', group: 'couple', src: 'assets/img/02_ProfileAdam.jpg', pos: [-1.9, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
+  { id: 'together', group: 'couple', src: 'assets/img/01_Banner.jpg', pos: [1.25, 2.65, -11.94], normal: [0, 0, 1], max: 2.8 },
+  { id: 'elsa', group: 'couple', src: 'assets/img/02_ProfileElsa.jpg', pos: [4.35, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
   { id: 'story-a', group: 'story', src: 'assets/img/05_TimingAkadResepsi.jpg', pos: [5.84, 2.6, -9.2], normal: [-1, 0, 0], max: 2.6 },
   { id: 'story-b', group: 'story', src: 'assets/img/06_FooterThankyou.jpg', pos: [8.0, 2.6, -5.84], normal: [0, 0, 1], max: 2.8 },
-  { id: 'gallery-1', group: 'gallery', src: 'assets/img/07_Story1.jpg', pos: [9.84, 2.6, 0.6], normal: [-1, 0, 0], max: 2.7 },
-  { id: 'gallery-2', group: 'gallery', src: 'assets/img/08_Story2.jpg', pos: [9.84, 2.6, 5.4], normal: [-1, 0, 0], max: 3.0 },
+  { id: 'story-c', group: 'story', src: 'assets/img/07_Story1.jpg', pos: [9.84, 2.6, -4.55], normal: [-1, 0, 0], max: 2.7 },
+  { id: 'story-d', group: 'story', src: 'assets/img/08_Story2.jpg', pos: [9.84, 2.6, -1.35], normal: [-1, 0, 0], max: 3.0 },
 ];
-const MAP_BOARD = { id: 'map', group: 'map', pos: [3.3, 2.6, -11.94], normal: [0, 0, 1], max: 2.8, aspect: 1.45 };
+// map board right beside the door
+const MAP_BOARD = { id: 'map', group: 'map', pos: [-4.86, 2.6, -11.94], normal: [0, 0, 1], max: 2.5, aspect: 1.45 };
+const DESK_X = -3.4;
+const DOOR = { x: -8.1, w: 2.5, h: 3.35 };
 
 export function createLobby() {
   const scene = new THREE.Scene();
@@ -63,7 +67,7 @@ export function createLobby() {
   // ---------- lights ----------
   scene.add(new THREE.HemisphereLight(0xfff1e0, 0x5a4a3a, 1.1));
   for (const [x, y, z, c, i] of [
-    [-8.4, 4.5, -2, 0xffd29a, 28], [8.4, 4.5, 2.5, 0xffd29a, 28], [1.6, 4.6, -10.4, 0xffd29a, 26],
+    [-8.4, 4.5, -2, 0xffd29a, 28], [8.4, 4.5, 2.5, 0xffd29a, 28], [DESK_X, 4.6, -10.4, 0xffd29a, 26],
     [0, 4.9, -1, 0xfff4e6, 30], [0, 4.9, 7, 0xfff4e6, 20],
   ]) {
     const l = new THREE.PointLight(c, i, 18, 1.4);
@@ -119,9 +123,10 @@ export function createLobby() {
   }
 
   // ---------- reception ----------
-  boxB(4.6, 1.1, 1.1, M.blackMarble, 1.6, 0, -9.2);
-  boxB(0.5, 0.02, 0.35, M.silver, 2.4, 1.1, -9.45);
-  const screen = boxB(0.5, 0.34, 0.015, M.silver, 2.4, 1.12, -9.28);
+  const deskMat = M.blackMarble.clone();
+  const desk = boxB(4.6, 1.1, 1.1, deskMat, DESK_X, 0, -9.2);
+  boxB(0.5, 0.02, 0.35, M.silver, DESK_X + 0.8, 1.1, -9.45);
+  const screen = boxB(0.5, 0.34, 0.015, M.silver, DESK_X + 0.8, 1.12, -9.28);
   screen.rotation.x = -0.15;
   // pendant lights hanging over the desk
   const glowTex = T.glowDot;
@@ -132,7 +137,8 @@ export function createLobby() {
     scene.add(sp);
     return sp;
   };
-  [[-0.4, 4.45], [0.6, 4.3], [1.6, 4.55], [2.6, 4.3], [3.6, 4.45]].forEach(([x, y]) => {
+  [[-2, 4.45], [-1, 4.3], [0, 4.55], [1, 4.3], [2, 4.45]].forEach(([dx, y]) => {
+    const x = DESK_X + dx;
     add(new THREE.CylinderGeometry(0.012, 0.012, H - y, 4), M.black, x, y + (H - y) / 2, -10.4);
     add(new THREE.CylinderGeometry(0.035, 0.035, 0.5, 6), M.black, x, y + 0.25, -10.4);
     add(new THREE.SphereGeometry(0.04, 6, 4), M.glow, x, y, -10.4);
@@ -140,9 +146,11 @@ export function createLobby() {
   });
 
   // ---------- door (front wall, far left) ----------
-  boxB(2.5, 3.35, 0.14, M.black, -8.1, 0, -11.95);
-  boxB(2.2, 3.15, 0.1, new THREE.MeshStandardMaterial({ map: T.door, roughness: 0.6 }), -8.1, 0, -11.88);
-  for (const s of [-1, 1]) boxB(0.05, 0.9, 0.08, M.silver, -8.1 + s * 0.14, 1.1, -11.8);
+  const doorFrameMat = M.black.clone();
+  const doorMat = new THREE.MeshStandardMaterial({ map: T.door, roughness: 0.6 });
+  const doorFrame = boxB(DOOR.w, DOOR.h, 0.14, doorFrameMat, DOOR.x, 0, -11.95);
+  const doorLeaf = boxB(DOOR.w - 0.3, DOOR.h - 0.2, 0.1, doorMat, DOOR.x, 0, -11.88);
+  for (const s of [-1, 1]) boxB(0.05, 0.9, 0.08, M.silver, DOOR.x + s * 0.14, 1.1, -11.8);
 
   // ---------- lounge (left wall) ----------
   const rug = add(new THREE.PlaneGeometry(5.2, 7), M.rug, -7.1, 0.01, -2);
@@ -191,7 +199,7 @@ export function createLobby() {
   scene.add(lamp);
   sprite(-9.1, 1.72, 1.9, 1.4, 0xffd7a0, 0.8);
   plant(-9.0, 4.4, 1.15);
-  plant(9.0, -2.6, 0.95);
+  plant(9.0, 2.3, 0.95);
 
   function plant(x, z, sc) {
     const g = new THREE.Group();
@@ -265,6 +273,13 @@ export function createLobby() {
   }
   for (const p of PHOTOS) hang(p);
   hang(MAP_BOARD, T.mapBoard);
+  // reception desk + door (+ the photo by the door): hovering any lights them all, clicking opens the RSVP card
+  entries.rsvp = {
+    id: 'rsvp', group: 'rsvp',
+    center: new THREE.Vector3(DESK_X - 1.2, 1.9, -10.6), normal: new THREE.Vector3(0, 0, 1),
+    w: 6.2, h: 3.8, glow: [deskMat, doorFrameMat, doorMat],
+  };
+  for (const m of [desk, doorFrame, doorLeaf]) { m.userData.entry = entries.rsvp; pickables.push(m); }
 
   // ---------- camera ----------
   const UP = new THREE.Vector3(0, 1, 0);
@@ -278,6 +293,7 @@ export function createLobby() {
     to: null,        // null = the swaying rest view, else a fixed { pos, q }
     k: 1,
     dur: 1,
+    tour: null,      // continuous pan along several poses, started once the glide in lands
   };
   const m4 = new THREE.Matrix4();
   const ROOM_CENTER = new THREE.Vector3(0, 1.7, 3), bowDir = new THREE.Vector3();
@@ -292,6 +308,7 @@ export function createLobby() {
   }
 
   function glide(camera, to, dur) {
+    cam.tour = null;
     cam.fromPos.copy(camera.position);
     cam.fromQ.copy(camera.quaternion);
     cam.to = to;
@@ -311,7 +328,8 @@ export function createLobby() {
       else { ry = 0.4; hy = 0.46; hx = 0.9; }
     }
     const fw = e.w + 0.36, fh = e.h + 0.36;
-    const d = Math.max(fh / 2 / (hy * tanV), fw / 2 / (hx * tanV * aspect));
+    const zoom = e.group === 'map' || e.group === 'rsvp' ? 1 : 1.3;
+    const d = Math.max(fh / 2 / (hy * tanV), fw / 2 / (hx * tanV * aspect)) / zoom;
     const right = new THREE.Vector3().crossVectors(e.normal.clone().negate(), UP).normalize();
     const pos = e.center.clone().addScaledVector(e.normal, d)
       .addScaledVector(right, -rx * d * tanV * aspect)
@@ -320,18 +338,55 @@ export function createLobby() {
     return { pos, q };
   }
 
-  // Step back to see every photo hanging on the right wall at once.
-  function galleryPose(camera) {
-    const list = Object.values(entries).filter((e) => e.group === 'gallery');
+  // Look into the right-hand corner, stepped back until every "Cerita Kami" photo fits.
+  function storyPose(camera) {
+    const list = Object.values(entries).filter((e) => e.group === 'story');
+    const target = new THREE.Vector3();
+    for (const e of list) target.add(e.center);
+    target.divideScalar(list.length);
+    const dir = target.clone().sub(new THREE.Vector3(0.5, target.y, 3.5)).normalize();
+    const right = new THREE.Vector3().crossVectors(dir, UP).normalize();
     const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    const zs = list.flatMap((e) => [e.center.z - e.w / 2, e.center.z + e.w / 2]);
-    const span = Math.max(...zs) - Math.min(...zs);
-    const tallest = Math.max(...list.map((e) => e.h));
-    const center = new THREE.Vector3(9.84, 2.6, (Math.max(...zs) + Math.min(...zs)) / 2);
-    const d = Math.min(17, Math.max((span / 2 + 0.8) / (tanV * camera.aspect), (tallest / 2 + 0.9) / tanV));
-    const pos = center.clone().add(new THREE.Vector3(-d, 0.25, 0));
-    const q = new THREE.Quaternion().setFromRotationMatrix(m4.lookAt(pos, center.clone().setY(pos.y), UP));
+    let ext = 0;
+    for (const e of list) ext = Math.max(ext, Math.abs(e.center.clone().sub(target).dot(right)) + e.w / 2 + 0.4);
+    const d = Math.max(5, ext / (tanV * camera.aspect));
+    const pos = target.clone().addScaledVector(dir, -d);
+    pos.x = Math.max(-8.5, pos.x);
+    pos.z = Math.min(11, pos.z);
+    const q = new THREE.Quaternion().setFromRotationMatrix(m4.lookAt(pos, target, UP));
     return { pos, q };
+  }
+
+  // Continuous pan through `poses`: slow at the first and last, fast in between,
+  // never pausing. `u` runs 0 .. poses.length - 1 (0 = first pose, 1 = second, ...).
+  function makeTour(poses, dur) {
+    const N = 240;
+    const speed = (t) => (0.22 + Math.exp(-(((t - 0.5) / 0.16) ** 2))) // fast through the middle
+      * Math.min(1, t / 0.1)                                          // ease out of the first pose
+      * Math.min(1, (1 - t) / 0.12);                                  // come to rest on the last
+    const table = new Float32Array(N + 1);
+    for (let i = 1; i <= N; i++) table[i] = table[i - 1] + speed((i - 0.5) / N);
+    const total = table[N];
+    for (let i = 0; i <= N; i++) table[i] = (table[i] / total) * (poses.length - 1);
+    return {
+      poses, dur, t: 0, active: false,
+      curve: new THREE.CatmullRomCurve3(poses.map((p) => p.pos), false, 'centripetal'),
+      at(tau) {
+        const f = Math.min(1, Math.max(0, tau)) * N, i = Math.min(N - 1, Math.floor(f));
+        return table[i] + (table[i + 1] - table[i]) * (f - i);
+      },
+      u: 0,
+    };
+  }
+
+  function stepTour(camera, dt) {
+    const tour = cam.tour;
+    tour.t = Math.min(tour.dur, tour.t + dt);
+    tour.u = tour.at(tour.t / tour.dur);
+    const last = tour.poses.length - 1;
+    tour.curve.getPoint(tour.u / last, camera.position);
+    const i = Math.min(last - 1, Math.floor(tour.u));
+    camera.quaternion.slerpQuaternions(tour.poses[i].q, tour.poses[i + 1].q, tour.u - i);
   }
 
   const raycaster = new THREE.Raycaster();
@@ -341,8 +396,9 @@ export function createLobby() {
     scene,
     // label anchors for the three clickable groups
     anchors: {
-      couple: new THREE.Vector3(-4.0, 4.55, -11.8),
-      map: new THREE.Vector3(MAP_BOARD.pos[0], 4.3, -11.8),
+      couple: new THREE.Vector3(1.25, 4.45, -11.8),
+      map: new THREE.Vector3(MAP_BOARD.pos[0], 4.2, -11.8),
+      rsvp: new THREE.Vector3(DESK_X, 0.75, -8.62),
       story: new THREE.Vector3(8.0, 4.5, -5.7),
     },
     enter(camera) {
@@ -356,6 +412,11 @@ export function createLobby() {
       cam.euler.set(0.03 - pointer.sy * 0.2, Math.sin(t * 0.15) * 0.03 - pointer.sx * 0.65, 0);
       cam.restQ.setFromEuler(cam.euler);
       cam.k = Math.min(1, cam.k + dt / cam.dur);
+      if (cam.tour && cam.k >= 1) {
+        cam.tour.active = true;
+        stepTour(camera, dt);
+        return;
+      }
       const e = ease(cam.k);
       const target = cam.to ? cam.to.pos : cam.rest;
       camera.position.lerpVectors(cam.fromPos, target, e);
@@ -367,7 +428,43 @@ export function createLobby() {
     settled() { return cam.k >= 1; },
     goRest(camera, dur = 1.4) { glide(camera, null, dur); },
     goItem(camera, id, layout, dur) { glide(camera, poseFor(camera, entries[id], layout), dur); },
-    goGallery(camera, dur = 1.8) { glide(camera, galleryPose(camera), dur); },
+    goStory(camera, dur = 1.8) { glide(camera, storyPose(camera), dur); },
+    // Look at the door from the right, turned slightly left (the map and desk stay in view),
+    // sized so the door fills about `fx` x `fy` of the screen and lands at `ndcX` across it.
+    // Returns where the door's centre will be on screen (0..1) so the RSVP card can cover it.
+    goDoor(camera, fx, fy, ndcX, dur) {
+      const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      const tanH = tanV * camera.aspect;
+      const angle = THREE.MathUtils.degToRad(camera.aspect >= 1 ? 36 : 24); // how far round to the right the camera stands
+      const turn = Math.atan(-ndcX * tanH);                                  // extra turn right so the door sits at ndcX
+      const center = new THREE.Vector3(DOOR.x, DOOR.h / 2, -11.95);
+      const toCam = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle));
+      const d = Math.max(
+        DOOR.h / (2 * tanV * fy * Math.cos(turn)),
+        (DOOR.w * Math.cos(angle)) / (2 * tanH * fx * Math.cos(turn)),
+      );
+      const pos = center.clone().addScaledVector(toCam, d);
+      pos.y = 2.35; // a touch above eye level keeps the lounge chairs out of the bottom of the frame
+      const lookDir = toCam.clone().negate().applyAxisAngle(UP, -turn);
+      const q = new THREE.Quaternion().setFromRotationMatrix(m4.lookAt(pos, pos.clone().add(lookDir), UP));
+      glide(camera, { pos, q }, dur);
+      // where the door will sit once the camera arrives
+      const probe = camera.clone();
+      probe.position.copy(pos);
+      probe.quaternion.copy(q);
+      probe.updateMatrixWorld();
+      const v = center.clone().project(probe);
+      return { x: (v.x + 1) / 2, y: (1 - v.y) / 2 };
+    },
+    // glide to the first item, then pan continuously through the rest
+    goTour(camera, ids, layout, glideDur, panDur) {
+      const poses = ids.map((id) => poseFor(camera, entries[id], layout));
+      glide(camera, poses[0], glideDur);
+      cam.tour = makeTour(poses, panDur);
+    },
+    // -1 until the pan starts, then 0 .. ids.length - 1
+    tourProgress() { return cam.tour && cam.tour.active ? cam.tour.u : -1; },
+    tourDone() { return !cam.tour || cam.tour.t >= cam.tour.dur; },
     // screen-space pick -> wall item (or null)
     pick(camera, x, y) {
       ndc.set(x, y);
@@ -379,6 +476,10 @@ export function createLobby() {
     highlight(group) {
       for (const e of Object.values(entries)) {
         const on = group && e.group === group;
+        if (e.glow) {
+          for (const m of e.glow) m.emissive.copy(GOLD).multiplyScalar(on ? 0.22 : 0);
+          continue;
+        }
         e.frameMat.color.copy(on ? GOLD : DARK);
         e.frameMat.emissive.copy(on ? GOLD : DARK).multiplyScalar(on ? 0.45 : 0);
       }
