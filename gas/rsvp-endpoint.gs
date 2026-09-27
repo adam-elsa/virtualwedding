@@ -1,7 +1,9 @@
 // Google Apps Script Web App — RSVP + Guestbook endpoint for the Adam & Elsa wedding site.
 //
 // SETUP (one-time, from your own Google account):
-// 1. Create a new Google Sheet. Add a header row in "Sheet1": Timestamp | Name | Attendance | Guests | Message
+// 1. Upload gas/rsvp-sheet.xlsx to Google Drive and open it as a Google Sheet. It already has the
+//    "RSVP" tab (header: Timestamp | Name | Attendance | Guests | Message), a "Ringkasan" summary
+//    and a "Petunjuk" tab with these steps. Set File > Settings > Time zone to Jakarta (GMT+7).
 // 2. In the Sheet, go to Extensions > Apps Script. Delete any starter code and paste this whole file.
 // 3. Click Deploy > New deployment > select type "Web app".
 //    - Execute as: Me
@@ -9,7 +11,7 @@
 // 4. Copy the deployment URL (ends in /exec) and paste it into RSVP_ENDPOINT_URL in script.js.
 // 5. Re-deploy (Deploy > Manage deployments > edit > new version) any time you change this file.
 
-const SHEET_NAME = 'Sheet1';
+const SHEET_NAME = 'RSVP';
 
 // Stop guest input like "=HYPERLINK(...)" from being run as a Sheet formula.
 function safeCell(value) {
@@ -25,7 +27,7 @@ function doPost(e) {
     new Date(),
     safeCell(data.name),
     safeCell(data.attendance),
-    safeCell(data.guests),
+    Math.max(1, Math.min(10, parseInt(data.guests, 10) || 1)), // a real number, so the summary can add it up
     safeCell(data.message),
   ]);
 

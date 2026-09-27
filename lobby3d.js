@@ -206,9 +206,9 @@ export function createLobby() {
   sprite(-9.1, 1.72, 1.9, 1.4, 0xffd7a0, 0.8);
   plant(-9.0, 4.4, 1.15);
 
-  // ---------- kotak angpao (left wall, between the sofa and the photo by the door) ----------
+  // ---------- kotak angpao (left wall, next to the sofa) ----------
   // a burgundy-draped table with a cream gift box: ribbon band, bow with tails, slot, two roses
-  const GIFT = { x: -9.45, z: -7.0 };
+  const GIFT = { x: -9.45, z: -4.6 }; // right beside the end of the sofa
   const clothMat = std(0x8c1d2c, { roughness: 0.9 });
   const boxMat = std(0xf2ece0, { roughness: 0.7 });
   const ribbonMat = std(0x7a1a28, { roughness: 0.45 });
@@ -325,8 +325,8 @@ export function createLobby() {
   // the kotak angpao opens "Amplop Digital"
   entries.gift = {
     id: 'gift', group: 'gift',
-    center: new THREE.Vector3(GIFT.x, 0.9, GIFT.z), normal: new THREE.Vector3(1, 0, 0),
-    w: 1.1, h: 1.5, glow: [boxMat, clothMat],
+    center: new THREE.Vector3(GIFT.x, 0.64, GIFT.z), normal: new THREE.Vector3(1, 0, 0),
+    w: 0.9, h: 1.28, pad: 0.02, glow: [boxMat, clothMat], // its own size (no frame), so the card sits snug beside it
   };
   gift.traverse((m) => { if (m.isMesh) { m.userData.entry = entries.gift; pickables.push(m); } });
 
@@ -383,7 +383,10 @@ export function createLobby() {
     const aspect = camera.aspect;
     let rx = 0, ry = 0, hx = 0.86, hy = 0.8; // where the frame lands on screen (NDC) and how much room it gets
     let zoom = e.group === 'map' || e.group === 'rsvp' || e.group === 'gift' ? 1 : 1.3;
-    if (layout !== 'center') {
+    if (typeof layout === 'object') {
+      // explicit framing: where the item lands on screen (NDC) and how much room it gets
+      ({ rx = 0, ry = 0, hx = 0.86, hy = 0.8, zoom = 1 } = layout);
+    } else if (layout !== 'center') {
       if (aspect >= 1 && reserve > 0) {
         const left = -0.92, right = 1 - 2 * reserve;
         rx = (left + right) / 2; hx = (right - left) / 2; hy = 0.84; zoom = 1;
@@ -515,11 +518,12 @@ export function createLobby() {
     screenRect(camera, id, w, h) {
       const e = entries[id];
       const right = new THREE.Vector3().crossVectors(e.normal.clone().negate(), UP).normalize();
+      const pad = e.pad ?? 0.18; // photo frames stick out 18 cm past the picture
       let l = Infinity, r = -Infinity, t = Infinity, b = -Infinity;
       for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
         const p = e.center.clone()
-          .addScaledVector(right, sx * (e.w / 2 + 0.18))
-          .addScaledVector(UP, sy * (e.h / 2 + 0.18))
+          .addScaledVector(right, sx * (e.w / 2 + pad))
+          .addScaledVector(UP, sy * (e.h / 2 + pad))
           .project(camera);
         const px = ((p.x + 1) / 2) * w, py = ((1 - p.y) / 2) * h;
         l = Math.min(l, px); r = Math.max(r, px); t = Math.min(t, py); b = Math.max(b, py);
@@ -529,6 +533,19 @@ export function createLobby() {
     goRest(camera, dur = 1.4) { glide(camera, null, dur); },
     goItem(camera, id, layout, dur, reserve) { glide(camera, poseFor(camera, entries[id], layout, reserve), dur); },
     goStory(camera, dur = 1.8) { glide(camera, storyPose(camera), dur); },
+    // Stand at eye level in front of the kotak angpao and look slightly down at it.
+    // The table + box fill `hy` of the screen height and land at (ndcX, ndcY) on screen.
+    goGift(camera, { ndcX = 0, ndcY = 0, hy = 0.55 }, dur) {
+      const e = entries.gift;
+      const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      const d = (e.h / 2 + 0.06) / (hy * tanV);
+      const right = new THREE.Vector3().crossVectors(e.normal.clone().negate(), UP).normalize();
+      const pos = e.center.clone().addScaledVector(e.normal, d).setY(1.7);
+      const target = e.center.clone().setY(0.85)
+        .addScaledVector(right, -ndcX * d * tanV * camera.aspect)
+        .addScaledVector(UP, -ndcY * d * tanV);
+      glide(camera, { pos, q: new THREE.Quaternion().setFromRotationMatrix(m4.lookAt(pos, target, UP)) }, dur);
+    },
     // Look at the door from the right, turned slightly left (the map and desk stay in view),
     // sized so the door fills about `fx` x `fy` of the screen and lands at `ndcX` across it.
     // Returns where the door's centre will be on screen (0..1) so the RSVP card can cover it.
