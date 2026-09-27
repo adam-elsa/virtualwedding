@@ -511,11 +511,13 @@ function init() {
     // our story rises over the lobby as the flash clears; then all but the last line fade.
     // "Dan kami ingin merayakannya bersama kalian." lingers, glides (full size) over to the
     // RSVP button, waits while the button appears beneath it, then shrinks into it.
-    const leaveAt = STORY_AT + STORY_MS, moveAt = leaveAt + 1800, arriveAt = moveAt + 1300;
+    // leave: the other lines fade (0.7 s) -> linger: only once they're gone, the last line rises
+    // to the centre (1.2 s) and holds -> move: it glides over the RSVP button -> arrive
+    const leaveAt = STORY_AT + STORY_MS, lingerAt = leaveAt + 1200, moveAt = lingerAt + 2000, arriveAt = moveAt + 1300;
     if (ms >= STORY_AT) gate.classList.add('show-story');
     if (ms >= leaveAt) gate.classList.add('story-leave');
     if (ms >= moveAt) gate.classList.add('story-fly');
-    if (ms >= leaveAt && !arrive.lingered) {
+    if (ms >= lingerAt && !arrive.lingered) {
       arrive.lingered = true;
       lingerStoryLine();
     }
@@ -597,7 +599,7 @@ function init() {
   const COUPLE_TOUR = ['adam', 'elsa', 'together'];
   const TOUR_PAN = 15; // seconds for the pan itself
   const tourCard = (u) => (u < 0.5 ? 'groom' : u < 1.5 ? 'bride' : 'couple');
-  const CARD_PHOTO = { groom: 'adam', bride: 'elsa', couple: 'together' };
+  const CARD_PHOTO = { groom: 'adam', bride: 'elsa', couple: 'together', gift: 'gift' };
   // wide screens: the couple cards ride along on the photo's right edge instead of the screen's
   const cardBeside = () => canvas.clientWidth / canvas.clientHeight >= 1 && canvas.clientWidth > 760;
   const cardReserve = () => {
@@ -665,8 +667,8 @@ function init() {
       lobby.goItem(camera, 'map', 'tall', 1.6);
       showCard('map', 1100);
     } else if (group === 'gift') {
-      setView({ name: 'gift' });
-      lobby.goItem(camera, 'gift', 'tall', 1.6);
+      setView({ name: 'gift', card: 'gift' });
+      lobby.goGift(camera, giftFraming(), 1.6);
       showCard('gift', 1100);
     } else if (group === 'rsvp') {
       setView({ name: 'rsvp' });
@@ -710,10 +712,22 @@ function init() {
     showCard(null);
   }
 
-  // Keep the couple card attached to the right side of its photo (wide screens), following
-  // the photo as the camera pans; everywhere else the stylesheet places the card.
+  // Wide screens: the kotak angpao and its card sit together as a pair in the middle of the
+  // screen (box a little left of centre, card right beside it); phones keep box above, card below.
+  function giftFraming() {
+    if (!cardBeside()) return { ndcY: 0.45, hy: 0.36 }; // phones: box in the upper part, above the card
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    const hy = 0.55;                                    // table + box fill ~55% of the height
+    const boxW = (0.9 / 1.28) * hy * H;
+    const cardW = Math.min(380, 0.36 * W);
+    const left = (W - (boxW + 24 + cardW)) / 2;         // centre the pair
+    return { ndcX: ((left + boxW / 2) / W) * 2 - 1, hy };
+  }
+
+  // Keep the couple (and angpao) card attached to the right side of its item (wide screens),
+  // following it as the camera moves; everywhere else the stylesheet places the card.
   function placeCoupleCard() {
-    const photo = view.name === 'couple' && cardBeside() && CARD_PHOTO[view.card];
+    const photo = (view.name === 'couple' || view.name === 'gift') && cardBeside() && CARD_PHOTO[view.card];
     if (!photo) {
       if (card.dataset.beside) {
         delete card.dataset.beside;

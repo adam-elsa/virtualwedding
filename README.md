@@ -46,10 +46,16 @@ The Claude Code preview (`.claude/launch.json`) serves on port 8811 with `Cache-
 
 The RSVP form is built and works right now in **preview mode** (submissions just render on-page, nothing is saved). To persist real submissions to a Google Sheet:
 
-1. Follow the setup steps at the top of [gas/rsvp-endpoint.gs](gas/rsvp-endpoint.gs) (create a Sheet, paste the script into Apps Script, deploy as a Web App).
-2. Copy the deployment's `/exec` URL.
-3. In [script.js](script.js), set `RSVP_ENDPOINT_URL` near the top to that URL.
-4. Reload the site — new RSVPs will append to your Sheet, and existing wishes will load into the Guestbook section on page load.
+1. Upload [gas/rsvp-sheet.xlsx](gas/rsvp-sheet.xlsx) to Google Drive and open it as a Google Sheet. It has three tabs:
+   - **RSVP**: header row only (Timestamp | Name | Attendance | Guests | Message). The website appends here.
+   - **Ringkasan**: live totals (replies, hadir, tidak hadir, total guests attending, wishes).
+   - **Petunjuk**: these setup steps.
+2. File > Settings > Time zone: Jakarta (GMT+7).
+3. Extensions > Apps Script: paste [gas/rsvp-endpoint.gs](gas/rsvp-endpoint.gs), then Deploy > New deployment > Web app (Execute as: Me, Who has access: Anyone).
+4. Copy the deployment's `/exec` URL and set `RSVP_ENDPOINT_URL` near the top of [script.js](script.js).
+5. Reload the site. RSVPs from both forms (the lobby's and the plain page's) append to the RSVP tab, and existing wishes load into the plain page's guestbook.
+
+Don't type rows into the RSVP tab by hand: every row with a message is served publicly to the guestbook.
 
 ## Deploying
 
