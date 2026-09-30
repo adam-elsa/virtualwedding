@@ -4,7 +4,7 @@
   // ---------- CONFIG ----------
   // TODO: paste your deployed Google Apps Script Web App URL here (see gas/rsvp-endpoint.gs + README).
   const RSVP_ENDPOINT_URL = '';
-  const WEDDING_DATE = new Date('2026-10-24T13:00:00+07:00'); // Akad time, used for countdown
+  const WEDDING_DATE = new Date('2026-10-24T12:30:00+07:00'); // Akad time, used for countdown
 
   // ---------- guest name from URL ----------
   const params = new URLSearchParams(window.location.search);
@@ -35,8 +35,8 @@
       // autoplay blocked; user can tap the music button manually
       musicToggle.querySelector('.music-icon').classList.add('paused');
     });
-    // 3D gate (gate3d.js): walk in, verse, our story in the lobby — resolves once
-    // the story's last line has shown (or right away if the scene never loaded)
+    // 3D gate (gate3d.js): the walk up to the hotel with the verse and our story —
+    // resolves as the doors open (or right away if the scene never loaded)
     const scene3d = window.weddingGate;
     Promise.resolve(scene3d ? scene3d.flyIn() : null).then(revealSite, revealSite);
   }

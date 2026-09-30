@@ -17,7 +17,7 @@
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Great+Vibes&family=Amiri:wght@400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Serif+Display:ital@0;1&family=Great+Vibes&family=Amiri:wght@400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -53,7 +53,6 @@
       </button>
     </div>
   </div>
-  <div class="gate-flash" aria-hidden="true"></div>
   <!-- verse overlaid on the walk up to the doors (gate3d.js toggles .show-ayat) -->
   <div class="gate-ayat">
     <span class="ayat-ornament" aria-hidden="true">❧</span>
@@ -61,7 +60,7 @@
     <p class="ayat-id">“Dan segala sesuatu Kami ciptakan berpasang-pasangan agar kamu mengingat (kebesaran Allah).”</p>
     <p class="ayat-src">QS. Az-Zariyat: 49</p>
   </div>
-  <!-- our story, line by line, over the lobby just after stepping inside; then the invitation opens -->
+  <!-- our story, line by line, after the verse; as the doors open, the invitation opens -->
   <div class="gate-story">
     <span class="ayat-ornament" aria-hidden="true">❧</span>
     <p class="story-line">Perjalanan kami tidak singkat.</p>
@@ -99,12 +98,14 @@
   <!-- ============ OPENING QUOTE ============ -->
   <section class="section quote-section">
     <div class="container narrow reveal">
-      <span class="ornament">❧</span>
-      <p class="quote-arabic" lang="ar" dir="rtl">وَمِنْ كُلِّ شَيْءٍ خَلَقْنَا زَوْجَيْنِ لَعَلَّكُمْ تَذَكَّرُوْنَ ﴿٤٩﴾</p>
-      <p class="quote-text">
-        “Dan segala sesuatu Kami ciptakan berpasang-pasangan agar kamu mengingat (kebesaran Allah).”
-      </p>
-      <p class="quote-source">QS. Az-Zariyat: 49</p>
+      <div class="card-soft quote-card">
+        <span class="ornament">❧</span>
+        <p class="quote-arabic" lang="ar" dir="rtl">وَمِنْ كُلِّ شَيْءٍ خَلَقْنَا زَوْجَيْنِ لَعَلَّكُمْ تَذَكَّرُوْنَ ﴿٤٩﴾</p>
+        <p class="quote-text">
+          “Dan segala sesuatu Kami ciptakan berpasang-pasangan agar kamu mengingat (kebesaran Allah).”
+        </p>
+        <p class="quote-source">QS. Az-Zariyat: 49</p>
+      </div>
     </div>
   </section>
 
@@ -114,13 +115,13 @@
       <p class="eyebrow center">Mempelai</p>
       <h2 class="section-title center">Kedua Mempelai</h2>
       <div class="couple-grid">
-        <article class="couple-card">
+        <article class="couple-card card-soft">
           <div class="couple-photo"><img src="assets/img/02_ProfileAdam.jpg" alt="Adam" loading="lazy"></div>
           <h3 class="couple-name">Adam</h3>
           <p class="couple-parents">Putra dari<br><span>Bapak Badru Kamal &amp; Ibu Ika Kurniaputri</span></p>
         </article>
         <div class="couple-amp" aria-hidden="true">&amp;</div>
-        <article class="couple-card">
+        <article class="couple-card card-soft">
           <div class="couple-photo"><img src="assets/img/02_ProfileElsa.jpg" alt="Elsa" loading="lazy"></div>
           <h3 class="couple-name">Elsa</h3>
           <p class="couple-parents">Putri dari<br><span>Bapak Muhammad Hasan &amp; Ibu Damini</span></p>
@@ -178,7 +179,7 @@
           <span class="event-icon">💍</span>
           <h3>Akad Nikah</h3>
           <p class="event-day">Sabtu, 24 Oktober 2026</p>
-          <p class="event-time">13.00 WIB</p>
+          <p class="event-time">12.30 WIB</p>
           <p class="event-venue">Golden Boutique Hotel<br>Jakarta</p>
           <a class="btn-outline" href="https://www.google.com/maps/search/?api=1&query=Golden+Boutique+Hotel+Jakarta" target="_blank" rel="noopener">Lihat Lokasi</a>
         </article>
@@ -236,7 +237,7 @@
         Doa restu Bapak/Ibu/Saudara/i adalah hadiah terindah bagi kami.
         Namun jika ingin memberi tanda kasih, dapat melalui:
       </p>
-      <div class="gift-card">
+      <div class="gift-card card-soft">
         <p class="gift-bank">BCA</p>
         <p class="gift-number" id="giftNumber">8691241238</p>
         <p class="gift-holder">a.n. Elsa</p>
@@ -263,8 +264,8 @@
       <h2 class="section-title center">Momen Kami</h2>
       <div class="gallery-grid">
         <div class="gallery-item"><img src="assets/img/01_Banner.jpg" alt="Adam & Elsa" loading="lazy"></div>
-        <div class="gallery-item"><img src="assets/img/02_ProfileAdam.jpg" alt="Adam" loading="lazy"></div>
-        <div class="gallery-item"><img src="assets/img/02_ProfileElsa.jpg" alt="Elsa" loading="lazy"></div>
+        <div class="gallery-item"><img src="assets/img/09_Galery_2.jpg" alt="Adam & Elsa" loading="lazy"></div>
+        <div class="gallery-item"><img src="assets/img/09_Galery_1.jpg" alt="Adam & Elsa" loading="lazy"></div>
         <div class="gallery-item"><img src="assets/img/04_Venue.jpg" alt="Adam & Elsa" loading="lazy"></div>
         <div class="gallery-item"><img src="assets/img/05_TimingAkadResepsi.jpg" alt="Adam & Elsa" loading="lazy"></div>
         <div class="gallery-item"><img src="assets/img/06_FooterThankyou.jpg" alt="Adam & Elsa" loading="lazy"></div>

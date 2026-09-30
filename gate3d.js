@@ -1,10 +1,9 @@
 // Low-poly Golden Boutique Hotel — the opening scene behind the gate.
-// After the doors open, the guest lands in the lobby (lobby3d.js) while our story
-// plays over it; once its last line has shown, the invitation page opens.
+// The verse and then our story play over the walk up to the doors; as the doors
+// open, the invitation page takes over.
 // Exposes window.weddingGate = { flyIn(): Promise, dispose() } for script.js.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { createLobby } from './lobby3d.js';
 
 const gate = document.getElementById('gate');
 const canvas = document.getElementById('gateCanvas');
@@ -25,16 +24,16 @@ function init() {
 
   const scene = new THREE.Scene();
   scene.background = skyTexture();
-  scene.fog = new THREE.Fog(0x1d2b52, 80, 260);
+  scene.fog = new THREE.Fog(0xcfe4f5, 80, 260); // light daytime haze toward the horizon
 
   const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 600);
 
-  // ---------- lights ----------
-  scene.add(new THREE.HemisphereLight(0x8aa2e0, 0x3a2e24, 1.3));
-  const moon = new THREE.DirectionalLight(0xb4c4ff, 1.1);
-  moon.position.set(-25, 35, 40);
-  scene.add(moon);
-  const uplight = new THREE.DirectionalLight(0xffc98a, 0.9); // warm façade uplights
+  // ---------- lights (bright daylight) ----------
+  scene.add(new THREE.HemisphereLight(0xd6ebff, 0x8a7a64, 1.7));
+  const sun = new THREE.DirectionalLight(0xfff4e0, 2.2);
+  sun.position.set(-25, 45, 40);
+  scene.add(sun);
+  const uplight = new THREE.DirectionalLight(0xffc98a, 0.35); // a touch of warmth on the façade
   uplight.position.set(12, 3, 30);
   scene.add(uplight);
   const porticoLight = new THREE.PointLight(0xffc27a, 45, 22, 1.6);
@@ -60,7 +59,7 @@ function init() {
     leaf: std(0x2c4a2c),
     leaf2: std(0x3a5a34),
     palm: std(0x3f6b3a),
-    ground: std(0x2f323a, { roughness: 1 }),
+    ground: std(0x5a5d63, { roughness: 1 }),
     glow: new THREE.MeshBasicMaterial({ color: 0xffd9a0 }),
     water: new THREE.MeshStandardMaterial({ color: 0x0f2438, roughness: 0.15, metalness: 0.4, emissive: 0x0b2030, envMap }),
   };
@@ -84,10 +83,10 @@ function init() {
 
   // ---------- background tower (curved, blue-glass centre) ----------
   const towerR = 42, towerZ = -60;
-  const towerMat = new THREE.MeshStandardMaterial({ map: T.facade, emissiveMap: T.facadeGlow, emissive: 0xffffff, roughness: 0.9 });
+  const towerMat = new THREE.MeshStandardMaterial({ map: T.facade, emissiveMap: T.facadeGlow, emissive: 0xffffff, emissiveIntensity: 0.15, roughness: 0.9 }); // windows barely lit by day
   T.facade.repeat.set(11, 2); T.facadeGlow.repeat.set(11, 2);
   add(new THREE.CylinderGeometry(towerR, towerR, 40, 48, 1, true, -1.1, 2.2), towerMat, 0, 20, towerZ);
-  const glassMat = new THREE.MeshStandardMaterial({ map: T.glass, emissiveMap: T.glassGlow, emissive: 0xffffff, roughness: 0.3, metalness: 0.2 });
+  const glassMat = new THREE.MeshStandardMaterial({ map: T.glass, emissiveMap: T.glassGlow, emissive: 0xffffff, emissiveIntensity: 0.35, roughness: 0.3, metalness: 0.2 });
   add(new THREE.CylinderGeometry(towerR + 0.6, towerR + 0.6, 38, 16, 1, true, -0.32, 0.64), glassMat, 0, 19, towerZ);
   add(new THREE.CylinderGeometry(towerR + 0.8, towerR + 0.8, 1.4, 48, 1, true, -1.1, 2.2), M.trim, 0, 40.4, towerZ);
   add(new THREE.CylinderGeometry(towerR + 1.2, towerR + 1.2, 1.6, 16, 1, true, -0.36, 0.72), M.dome, 0, 38.6, towerZ);
@@ -241,7 +240,7 @@ function init() {
   const plaza = add(new THREE.CircleGeometry(16, 48), new THREE.MeshStandardMaterial({ map: T.paving, roughness: 1 }), 0, 0.02, FZ);
   plaza.rotation.x = -Math.PI / 2;
   const pool = add(new THREE.PlaneGeometry(46, 30), new THREE.MeshBasicMaterial({
-    map: T.glowDot, color: 0xffb865, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false,
+    map: T.glowDot, color: 0xffb865, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false,
   }), 0, 0.05, FZ - 2);
   pool.rotation.x = -Math.PI / 2;
   const curbMat =new THREE.MeshStandardMaterial({ map: T.curb, roughness: 0.9 });
@@ -266,7 +265,7 @@ function init() {
   for (const [x, z] of [[-7.4, 7.5], [7.4, 7.5], [-12, 12], [12, 12]]) {
     add(new THREE.CylinderGeometry(0.07, 0.1, 3, 5), M.dark, x, 1.5, z);
     add(new THREE.SphereGeometry(0.22, 8, 6), M.glow, x, 3.1, z);
-    glowSprite(x, 3.1, z, 2.4);
+    glowSprite(x, 3.1, z, 1.4, 0xffc98a, 0.35); // daytime: the lamps are only faintly lit
   }
   // portico downlights
   for (const [r, th] of [[2, 0], [4, -0.7], [4, 0.7], [4.8, -1.3], [4.8, 1.3], [2.6, -1.1], [2.6, 1.1]]) {
@@ -276,9 +275,7 @@ function init() {
   glowSprite(0, 2.4, -6.5, 6, 0xfff2d6, 0.9); // light at the end of the hall, seen once the doors open
   const statueGlow = glowSprite(0, 5.2, FZ + 0.5, 5, 0xffd48a, 0.25);
 
-  // ---------- stars + gold motes ----------
-  const stars = pointsCloud(260, () => [(Math.random() - 0.5) * 420, 45 + Math.random() * 150, -150 - Math.random() * 60], 1.4, 0xdfe6ff, false);
-  scene.add(stars);
+  // ---------- gold motes ----------
   const MOTES = 220;
   const motes = pointsCloud(MOTES, () => [(Math.random() - 0.5) * 60, Math.random() * 26, -6 + Math.random() * 34], 0.28, 0xffd98a, true);
   scene.add(motes);
@@ -375,24 +372,19 @@ function init() {
   }
 
   // ---------- animation state ----------
-  // intro -> idle -> walk (verse overlaid on the way; doors open, white flash)
-  // -> arrive (our story over the lobby) -> done (resolves flyIn's promise)
+  // intro -> idle -> walk (verse, then our story, overlaid on the way up to the doors)
+  // -> done (the doors start to open; resolves flyIn's promise)
   const clock = new THREE.Clock();
   const INTRO = 7; // seconds of slow zoom-in from the left
   const CREEP = 0.25; // then keep strolling forward, closing up to 25% of the distance (never stopping dead)
   const CREEP_TIME = 80; // seconds: how gradually that stroll eases off
-  const ARRIVE_MS = 1900; // white flash -> lobby
-  // the verse covers the whole walk to the doors; this scales the walk (and so how long the
-  // verse shows) — 0.75 = a quarter shorter than the original unhurried pace
-  const WALK_PACE = 0.75;
-  const STORY_AT = 1300, STORY_MS = 7500; // our story over the lobby as the camera glides in (a tap skips ahead)
+  // text over the walk (ms after "Buka Undangan"); the walk is paced to reach the doors as it ends
+  const AYAT_AT = 400, AYAT_MS = 9750;                // QS. Az-Zariyat 49
+  const STORY_AT = AYAT_AT + AYAT_MS + 1200, STORY_MS = 7500; // our story, once the verse has faded (a tap skips ahead)
+  const DOOR_AT = STORY_AT + STORY_MS;                // doors start to open -> the invitation
   let state = 'intro';
   let walk = null;
-  let arrive = null;
-  let active = scene;
   let raf = 0;
-  const flash = gate.querySelector('.gate-flash');
-  const lobby = createLobby();
 
   const easeOut = (t) => 1 - Math.pow(1 - t, 3);
   const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
@@ -419,18 +411,16 @@ function init() {
     pointer.sx += (pointer.x - pointer.sx) * 0.05;
     pointer.sy += (pointer.y - pointer.sy) * 0.05;
 
-    if (active === scene) {
-      // drifting motes
-      const pos = motes.geometry.attributes.position;
-      for (let i = 0; i < MOTES; i++) {
-        let y = pos.getY(i) + moteSpeed[i] * dt;
-        if (y > 26) y = 0;
-        pos.setY(i, y);
-        pos.setX(i, pos.getX(i) + Math.sin(t * 0.5 + i) * 0.004);
-      }
-      pos.needsUpdate = true;
-      statueGlow.material.opacity = 0.22 + Math.sin(t * 1.4) * 0.06;
+    // drifting motes
+    const pos = motes.geometry.attributes.position;
+    for (let i = 0; i < MOTES; i++) {
+      let y = pos.getY(i) + moteSpeed[i] * dt;
+      if (y > 26) y = 0;
+      pos.setY(i, y);
+      pos.setX(i, pos.getX(i) + Math.sin(t * 0.5 + i) * 0.004);
     }
+    pos.needsUpdate = true;
+    statueGlow.material.opacity = 0.22 + Math.sin(t * 1.4) * 0.06;
 
     if (state === 'intro' || state === 'idle') {
       const k = easeOut(Math.min(1, t / INTRO));
@@ -442,16 +432,13 @@ function init() {
       placeCamera(THREE.MathUtils.lerp(-0.34, 0, k) + swayAz, r, TARGET.y - pointer.sy * 1.6);
       camera.position.y += Math.abs(Math.sin(t * Math.PI * 0.8)) * 0.025; // unhurried footsteps
       setViewShift(baseShift());
-    } else if (state === 'walk') {
+    } else if (walk) {
       stepWalk(performance.now() - walk.start);
-    } else if (state === 'arrive') {
-      stepArrive(performance.now() - arrive.start);
     }
-    if (active === lobby.scene) lobby.update(camera, t, dt, pointer);
-    renderer.render(active, camera);
+    renderer.render(scene, camera);
   }
 
-  // walk around the fountain, up the carpet, doors swing open, step inside
+  // walk around the fountain and up the carpet with the text overlaid; the doors swing open
   function stepWalk(ms) {
     const W = walk;
     // ease the picture back to centre as the walk starts, so the doors are framed dead ahead
@@ -475,60 +462,34 @@ function init() {
       camera.updateProjectionMatrix();
       camera.rotateZ(Math.sin((ms / 1000) * Math.PI * 0.95) * 0.008 * pace);
     } else {
+      // at the doors, easing forward while the page fades over
       const stop = W.curve.points[W.curve.points.length - 1];
-      const creep = smooth(W.walkMs, W.enterAt, ms) * 0.6;
-      const enter = Math.pow(Math.min(1, Math.max(0, (ms - W.enterAt) / W.enterMs)), 2);
-      camera.position.set(0, EYE, stop.z - creep - enter * 10);
+      camera.position.set(0, EYE, stop.z - smooth(W.walkMs, W.walkMs + W.doorMs, ms) * 0.6);
       camera.lookAt(DOOR_LOOK);
-      camera.fov = W.doorFov + enter * 10;
-      camera.updateProjectionMatrix();
     }
     const doorK = easeOut(Math.min(1, Math.max(0, (ms - W.doorAt) / W.doorMs)));
     setDoors(doorK);
     hall.intensity = 30 + 90 * doorK;
     porticoLight.intensity = 45 + 60 * doorK;
-    if (flash) flash.style.opacity = String(smooth(W.enterAt + W.enterMs * 0.4, W.endMs, ms));
-    // the verse (QS. Az-Zariyat 49) overlays the whole walk, fading as the camera
-    // steps through the doorway (~80% of the way in); our story follows inside
-    gate.classList.toggle('show-ayat', ms >= 500 * WALK_PACE && ms < W.enterAt + W.enterMs * 0.8);
-    if (ms >= W.endMs) startArrive();
-  }
-
-  // through the doors: under the white flash, swap to the lobby, then let the flash fade
-  function startArrive() {
-    state = 'arrive';
-    arrive = { start: performance.now(), entered: false };
-    setViewShift(0);
-    gate.classList.remove('show-ayat', 'show-story');
-    renderer.compile(lobby.scene, camera); // warm up shaders while the screen is white
-  }
-
-  function stepArrive(ms) {
-    if (!arrive.entered && ms >= 250) {
-      arrive.entered = true;
-      active = lobby.scene;
-      lobby.enter(camera);
-    }
-    if (arrive.entered && flash) flash.style.opacity = String(1 - smooth(250, ARRIVE_MS, ms));
-    // our story rises over the lobby as the flash clears, line by line; once the last line
-    // ("Dan kami ingin merayakannya bersama kalian.") has had its moment, open the invitation
-    if (ms >= STORY_AT) gate.classList.add('show-story');
-    if (ms >= STORY_AT + STORY_MS) {
+    gate.classList.toggle('show-ayat', ms >= AYAT_AT && ms < AYAT_AT + AYAT_MS);
+    gate.classList.toggle('show-story', ms >= STORY_AT);
+    // the doors are swinging open: over to the invitation
+    if (ms >= W.walkMs && state === 'walk') {
       state = 'done';
-      walk.resolve();
+      W.resolve();
     }
   }
 
   // tap while the story is up to move on sooner
   gate.addEventListener('pointerdown', () => {
-    if (state !== 'arrive') return;
-    const ms = performance.now() - arrive.start;
-    if (ms > STORY_AT + 1500) arrive.start = performance.now() - (STORY_AT + STORY_MS);
+    if (state !== 'walk' || performance.now() - walk.start < STORY_AT + 1500) return;
+    state = 'done';
+    walk.resolve();
   });
 
   // ---------- public API ----------
   window.weddingGate = {
-    // resolves once our story has played, to open the invitation
+    // resolves as the doors open, once the verse and our story have played
     flyIn() {
       if (walk) return walk.promise;
       gate.classList.add('is-flying');
@@ -550,12 +511,10 @@ function init() {
       const dist = 6.6 + 0.5;
       const halfH = Math.atan(Math.tan(Math.atan(2.2 / dist)) / camera.aspect);
       walk.doorFov = Math.max(40, THREE.MathUtils.radToDeg(halfH * 2));
-      walk.walkMs = WALK_PACE * Math.min(15000, Math.max(11000, 6400 + walk.curve.getLength() * 70));
-      walk.doorAt = walk.walkMs - 500 * WALK_PACE;
-      walk.doorMs = 1700 * WALK_PACE;
-      walk.enterAt = walk.walkMs + 1000 * WALK_PACE;
-      walk.enterMs = 1900 * WALK_PACE;
-      walk.endMs = walk.enterAt + walk.enterMs;
+      // the doors start to open just before the camera reaches them, as the text ends
+      walk.doorAt = DOOR_AT;
+      walk.doorMs = 1700;
+      walk.walkMs = DOOR_AT + 500;
       walk.start = performance.now();
       state = 'walk';
       return walk.promise;
@@ -566,15 +525,13 @@ function init() {
       window.removeEventListener('pointermove', onPointer);
       window.removeEventListener('pointerdown', onPointer);
       window.removeEventListener('deviceorientation', onOrient);
-      for (const s of [scene, lobby.scene]) {
-        s.traverse((o) => {
-          if (o.geometry) o.geometry.dispose();
-          if (o.material) {
-            if (o.material.map) o.material.map.dispose();
-            o.material.dispose();
-          }
-        });
-      }
+      scene.traverse((o) => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) {
+          if (o.material.map) o.material.map.dispose();
+          o.material.dispose();
+        }
+      });
       envMap.dispose();
       pmrem.dispose();
       renderer.dispose();
@@ -734,10 +691,12 @@ function rng(seed) {
 function skyTexture() {
   return canvasTex(8, 512, (g, w, h) => {
     const grd = g.createLinearGradient(0, 0, 0, h);
-    grd.addColorStop(0, '#050817');
-    grd.addColorStop(0.4, '#101f4a');
-    grd.addColorStop(0.75, '#28427e');
-    grd.addColorStop(1, '#3d5288');
+    // bright daytime blue, paling toward the horizon
+    // (a notch brighter than the target: tone mapping darkens it a little)
+    grd.addColorStop(0, '#4f9cf0');
+    grd.addColorStop(0.45, '#7dbdf6');
+    grd.addColorStop(0.8, '#bfe0fb');
+    grd.addColorStop(1, '#e8f4fd');
     g.fillStyle = grd;
     g.fillRect(0, 0, w, h);
   });

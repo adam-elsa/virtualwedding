@@ -1,19 +1,16 @@
 # Adam & Elsa — Wedding Invitation
 
 Single-page wedding invitation. 24 October 2026 · Golden Boutique Hotel, Jakarta.
-Akad 13.00 WIB · Resepsi 16.00 WIB.
+Akad 12.30 WIB · Resepsi 16.00 WIB.
 
 Plain HTML/CSS/JS, no build step. See [PLAN.md](PLAN.md) for design decisions.
 
 The opening screen is a low-poly 3D model of the Golden Boutique Hotel ([gate3d.js](gate3d.js), Three.js loaded from jsDelivr). The opening text (names, guest, "Buka Undangan") sits at the top of the screen with the hotel below it.
 
 - **Arrival:** the camera eases in from the left at eye level and keeps strolling slowly toward the hotel. It sways with the mouse (desktop) or the phone's tilt (gyro; iOS asks for permission on the first tap).
-- **The walk:** tapping "Buka Undangan" walks the camera, unhurried, around the fountain and up the red carpet, with QS. Az-Zariyat: 49 overlaid until it steps through the lobby doors.
-- **Our story:** inside, the story ("Perjalanan kami tidak singkat. …") rises line by line over the lobby ([lobby3d.js](lobby3d.js), photos framed on the walls). Once its last line, "Dan kami ingin merayakannya bersama kalian.", has shown, the 3D gate fades out and the invitation page opens. A tap skips ahead.
+- **The walk:** tapping "Buka Undangan" walks the camera, unhurried, around the fountain and up the red carpet. On the way, QS. Az-Zariyat: 49 shows, then our story ("Perjalanan kami tidak singkat. …") rises line by line. As its last line, "Dan kami ingin merayakannya bersama kalian.", finishes, the hotel doors swing open and the invitation page fades in. A tap during the story skips ahead. The text timings (`AYAT_AT`, `AYAT_MS`, `STORY_MS`) are in [gate3d.js](gate3d.js); the walk is paced to reach the doors as the text ends.
 
 The 3D scene is only the front door: the invitation itself is the plain page, with the couple, story, schedule, RSVP, gift details and guestbook. If WebGL or the CDN isn't available, the plain gate still works. The ♪ music button floats above the 3D scene.
-
-- **Lobby photos:** listed in `PHOTOS` at the top of [lobby3d.js](lobby3d.js) (file, wall position, size).
 
 ## Run locally
 
