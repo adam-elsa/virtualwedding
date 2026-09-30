@@ -35,8 +35,8 @@
       // autoplay blocked; user can tap the music button manually
       musicToggle.querySelector('.music-icon').classList.add('paused');
     });
-    // 3D gate (gate3d.js): walk in, verse, lobby — resolves when the guest
-    // taps "Buka Undangan Simple" (or right away if the scene never loaded)
+    // 3D gate (gate3d.js): walk in, verse, our story in the lobby — resolves once
+    // the story's last line has shown (or right away if the scene never loaded)
     const scene3d = window.weddingGate;
     Promise.resolve(scene3d ? scene3d.flyIn() : null).then(revealSite, revealSite);
   }
@@ -179,7 +179,6 @@
   }
   loadWishes();
 
-  // the invitation's form and the one at the lobby reception share this
   function wireRsvp(form) {
     if (!form) return;
     const status = form.querySelector('.rsvp-status');
@@ -224,9 +223,8 @@
     });
   }
   wireRsvp(rsvpForm);
-  wireRsvp(document.getElementById('lobbyRsvpForm'));
 
-  // ---------- copy gift number (invitation + lobby kotak angpao) ----------
+  // ---------- copy gift number ----------
   function wireCopy(btn, numberEl) {
     if (!btn || !numberEl) return;
     btn.addEventListener('click', async () => {
@@ -240,5 +238,4 @@
     });
   }
   wireCopy(document.getElementById('copyGift'), document.getElementById('giftNumber'));
-  wireCopy(document.getElementById('lobbyCopyGift'), document.getElementById('lobbyGiftNumber'));
 })();

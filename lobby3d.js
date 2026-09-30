@@ -1,5 +1,6 @@
 // Low-poly hotel lobby with the couple's photos on the walls.
-// Seen right after the guest walks through the hotel doors (gate3d.js).
+// Seen right after the guest walks through the hotel doors (gate3d.js), as the
+// backdrop for our story; then the invitation page takes over.
 //
 // Room layout (metres-ish): x -10..10, z -12..12, the entrance door is at z = +12
 // behind the camera. Ahead: wood panel wall, reception desk, slatted column (right).
@@ -9,24 +10,19 @@ import * as THREE from 'three';
 const W = 20, D = 24, H = 5.2;
 const SLAT_H = H - 0.4; // leave a gap at the top for the warm cove light
 
-// Wall items, grouped by what clicking them opens:
-//   couple  -> "Kedua Mempelai" tour (Adam -> Elsa -> together)
-//   map     -> "Lokasi & Tempat" (map + Akad/Resepsi times)
-//   story   -> "Cerita Kami": the column + right-wall photos; each zooms in on its own,
-//              the label shows them all together
-//   rsvp    -> RSVP card; the photo by the door joins the reception desk + door (set up below)
+// photos on the front, left and right walls
 const PHOTOS = [
-  { id: 'venue', group: 'rsvp', src: 'assets/img/04_Venue.jpg', pos: [-9.84, 2.6, -9.6], normal: [1, 0, 0], max: 2.5 },
-  { id: 'adam', group: 'couple', src: 'assets/img/02_ProfileAdam.jpg', pos: [-1.89, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
-  { id: 'elsa', group: 'couple', src: 'assets/img/02_ProfileElsa.jpg', pos: [0.63, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
-  { id: 'together', group: 'couple', src: 'assets/img/01_Banner.jpg', pos: [3.75, 2.65, -11.94], normal: [0, 0, 1], max: 2.8 },
-  { id: 'story-a', group: 'story', src: 'assets/img/05_TimingAkadResepsi.jpg', pos: [5.84, 2.6, -9.2], normal: [-1, 0, 0], max: 2.6 },
-  { id: 'story-b', group: 'story', src: 'assets/img/06_FooterThankyou.jpg', pos: [8.0, 2.6, -5.84], normal: [0, 0, 1], max: 2.8 },
-  { id: 'story-c', group: 'story', src: 'assets/img/07_Story1.jpg', pos: [9.84, 2.6, -4.55], normal: [-1, 0, 0], max: 2.7 },
-  { id: 'story-d', group: 'story', src: 'assets/img/08_Story2.jpg', pos: [9.84, 2.6, -1.35], normal: [-1, 0, 0], max: 3.0 },
+  { id: 'venue', src: 'assets/img/04_Venue.jpg', pos: [-9.84, 2.6, -9.6], normal: [1, 0, 0], max: 2.5 },
+  { id: 'adam', src: 'assets/img/02_ProfileAdam.jpg', pos: [-1.89, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
+  { id: 'elsa', src: 'assets/img/02_ProfileElsa.jpg', pos: [0.63, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
+  { id: 'together', src: 'assets/img/01_Banner.jpg', pos: [3.75, 2.65, -11.94], normal: [0, 0, 1], max: 2.8 },
+  { id: 'story-a', src: 'assets/img/05_TimingAkadResepsi.jpg', pos: [5.84, 2.6, -9.2], normal: [-1, 0, 0], max: 2.6 },
+  { id: 'story-b', src: 'assets/img/06_FooterThankyou.jpg', pos: [8.0, 2.6, -5.84], normal: [0, 0, 1], max: 2.8 },
+  { id: 'story-c', src: 'assets/img/07_Story1.jpg', pos: [9.84, 2.6, -4.55], normal: [-1, 0, 0], max: 2.7 },
+  { id: 'story-d', src: 'assets/img/08_Story2.jpg', pos: [9.84, 2.6, -1.35], normal: [-1, 0, 0], max: 3.0 },
 ];
 // map board right beside the door
-const MAP_BOARD = { id: 'map', group: 'map', pos: [-4.86, 2.6, -11.94], normal: [0, 0, 1], max: 2.5, aspect: 1.45 };
+const MAP_BOARD = { id: 'map', pos: [-4.86, 2.6, -11.94], normal: [0, 0, 1], max: 2.5, aspect: 1.45 };
 const DESK_X = -3.4;
 const DOOR = { x: -8.1, w: 2.5, h: 3.35 };
 
@@ -129,8 +125,7 @@ export function createLobby() {
   }
 
   // ---------- reception ----------
-  const deskMat = M.blackMarble.clone();
-  const desk = boxB(4.6, 1.1, 1.1, deskMat, DESK_X, 0, -9.2);
+  boxB(4.6, 1.1, 1.1, M.blackMarble, DESK_X, 0, -9.2);
   boxB(0.5, 0.02, 0.35, M.silver, DESK_X + 0.8, 1.1, -9.45);
   const screen = boxB(0.5, 0.34, 0.015, M.silver, DESK_X + 0.8, 1.12, -9.28);
   screen.rotation.x = -0.15;
@@ -152,10 +147,9 @@ export function createLobby() {
   });
 
   // ---------- door (front wall, far left) ----------
-  const doorFrameMat = M.black.clone();
   const doorMat = new THREE.MeshStandardMaterial({ map: T.door, roughness: 0.6 });
-  const doorFrame = boxB(DOOR.w, DOOR.h, 0.14, doorFrameMat, DOOR.x, 0, -11.95);
-  const doorLeaf = boxB(DOOR.w - 0.3, DOOR.h - 0.2, 0.1, doorMat, DOOR.x, 0, -11.88);
+  boxB(DOOR.w, DOOR.h, 0.14, M.black, DOOR.x, 0, -11.95);
+  boxB(DOOR.w - 0.3, DOOR.h - 0.2, 0.1, doorMat, DOOR.x, 0, -11.88);
   for (const s of [-1, 1]) boxB(0.05, 0.9, 0.08, M.silver, DOOR.x + s * 0.14, 1.1, -11.8);
 
   // ---------- lounge (left wall) ----------
@@ -261,9 +255,6 @@ export function createLobby() {
 
   // ---------- framed photos + the map board ----------
   const loader = new THREE.TextureLoader();
-  const entries = {};      // id -> { id, group, center, normal, w, h, frameMat }
-  const pickables = [];
-  const GOLD = new THREE.Color(0xc9a24f), DARK = new THREE.Color(0x1a1410);
 
   function hang(p, texture) {
     const g = new THREE.Group();
@@ -272,8 +263,7 @@ export function createLobby() {
     g.position.copy(center);
     g.lookAt(center.clone().add(normal));
     scene.add(g);
-    const frameMat = M.frame.clone();
-    const frame = add(new THREE.BoxGeometry(1, 1, 0.06), frameMat, 0, 0, 0, g);
+    const frame = add(new THREE.BoxGeometry(1, 1, 0.06), M.frame, 0, 0, 0, g);
     // frame box front face at +3 cm, white mat just in front, photo well clear of both (no z-fighting)
     const mat = add(new THREE.PlaneGeometry(1, 1), M.mat, 0, 0, 0.04, g);
     const picMat = new THREE.MeshBasicMaterial({
@@ -284,11 +274,9 @@ export function createLobby() {
     const bar = add(new THREE.BoxGeometry(1, 0.05, 0.1), M.black, 0, 0, 0.12, g);
     const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffe0b0, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
     g.add(halo);
-    const entry = { id: p.id, group: p.group, center, normal, w: 1, h: 1, frameMat };
     const layout = (aspect) => {
       const w = aspect >= 1 ? p.max : p.max * aspect;
       const h = aspect >= 1 ? p.max / aspect : p.max;
-      entry.w = w; entry.h = h;
       pic.scale.set(w, h, 1);
       mat.scale.set(w + 0.24, h + 0.24, 1);
       frame.scale.set(w + 0.36, h + 0.36, 1);
@@ -310,28 +298,11 @@ export function createLobby() {
         layout(tex.image.width / tex.image.height);
       });
     }
-    for (const m of [frame, mat, pic]) { m.userData.entry = entry; pickables.push(m); }
-    entries[p.id] = entry;
   }
   for (const p of PHOTOS) hang(p);
   hang(MAP_BOARD, T.mapBoard);
-  // reception desk + door (+ the photo by the door): hovering any lights them all, clicking opens the RSVP card
-  entries.rsvp = {
-    id: 'rsvp', group: 'rsvp',
-    center: new THREE.Vector3(DESK_X - 1.2, 1.9, -10.6), normal: new THREE.Vector3(0, 0, 1),
-    w: 6.2, h: 3.8, glow: [deskMat, doorFrameMat, doorMat],
-  };
-  for (const m of [desk, doorFrame, doorLeaf]) { m.userData.entry = entries.rsvp; pickables.push(m); }
-  // the kotak angpao opens "Amplop Digital"
-  entries.gift = {
-    id: 'gift', group: 'gift',
-    center: new THREE.Vector3(GIFT.x, 0.64, GIFT.z), normal: new THREE.Vector3(1, 0, 0),
-    w: 0.9, h: 1.28, pad: 0.02, glow: [boxMat, clothMat], // its own size (no frame), so the card sits snug beside it
-  };
-  gift.traverse((m) => { if (m.isMesh) { m.userData.entry = entries.gift; pickables.push(m); } });
 
   // ---------- camera ----------
-  const UP = new THREE.Vector3(0, 1, 0);
   const cam = {
     start: new THREE.Vector3(0, 1.7, 11.2),
     rest: new THREE.Vector3(0, 1.7, 7.2),
@@ -339,17 +310,13 @@ export function createLobby() {
     euler: new THREE.Euler(0, 0, 0, 'YXZ'),
     fromPos: new THREE.Vector3(),
     fromQ: new THREE.Quaternion(),
-    to: null,        // null = the swaying rest view, else a fixed { pos, q }
     k: 1,
     dur: 1,
-    tour: null,      // continuous pan along several poses, started once the glide in lands
   };
-  const m4 = new THREE.Matrix4();
   // smootherstep: speed and acceleration both ease to zero at the ends, no lurch at start/stop
   const ease = (t) => t * t * t * (t * (t * 6 - 15) + 10);
   // the pose the camera is heading for this frame; the camera itself follows it with light smoothing
-  const raw = { pos: new THREE.Vector3(), q: new THREE.Quaternion(), snap: true, prev: new THREE.Vector3(), vel: new THREE.Vector3() };
-  const v0 = new THREE.Vector3(); // velocity carried into a new glide
+  const raw = { pos: new THREE.Vector3(), q: new THREE.Quaternion(), snap: true };
   const SMOOTH = 0.12; // seconds
 
   function fitCamera(camera) {
@@ -360,120 +327,16 @@ export function createLobby() {
     cam.rest.set(portrait ? -0.4 : 0, 1.7, portrait ? 4.5 : 9.0);
   }
 
-  function glide(camera, to, dur) {
-    cam.tour = null;
-    // start from where the camera was heading (not its lagging on-screen pose)
+  // glide from the doorway to the swaying rest view
+  function glide(dur) {
     cam.fromPos.copy(raw.pos);
     cam.fromQ.copy(raw.q);
-    v0.copy(raw.vel);
-    // longer trips get a little more time so they never whip across the room
-    const dist = raw.pos.distanceTo(to ? to.pos : cam.rest);
-    dur = Math.max(dur, 0.8 + dist * 0.1);
-    cam.to = to;
     cam.k = 0;
     cam.dur = dur;
   }
 
-  // Camera facing a wall item squarely. `layout` leaves room for an info card:
-  // 'center' (no card), 'caption' (card beside/below), 'tall' (big card below on phones).
-  // `reserve` (wide screens): fraction of the screen width kept free on the right for a card
-  // attached beside the photo; the photo then fills everything to its left.
-  function poseFor(camera, e, layout, reserve = 0) {
-    const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    const aspect = camera.aspect;
-    let rx = 0, ry = 0, hx = 0.86, hy = 0.8; // where the frame lands on screen (NDC) and how much room it gets
-    let zoom = e.group === 'map' || e.group === 'rsvp' || e.group === 'gift' ? 1 : 1.3;
-    if (typeof layout === 'object') {
-      // explicit framing: where the item lands on screen (NDC) and how much room it gets
-      ({ rx = 0, ry = 0, hx = 0.86, hy = 0.8, zoom = 1 } = layout);
-    } else if (layout !== 'center') {
-      if (aspect >= 1 && reserve > 0) {
-        const left = -0.92, right = 1 - 2 * reserve;
-        rx = (left + right) / 2; hx = (right - left) / 2; hy = 0.84; zoom = 1;
-      } else if (aspect >= 1) { rx = -0.38; hx = 0.54; hy = 0.78; }
-      else if (layout === 'tall') { ry = 0.6; hy = 0.3; hx = 0.9; }
-      // phones: photo on the left, slim card on the right (it only covers the wall at the photo's edge)
-      else { rx = -0.3; hx = 0.68; hy = 0.8; zoom = 1; }
-    }
-    const fw = e.w + 0.36, fh = e.h + 0.36;
-    const d = Math.max(fh / 2 / (hy * tanV), fw / 2 / (hx * tanV * aspect)) / zoom;
-    const right = new THREE.Vector3().crossVectors(e.normal.clone().negate(), UP).normalize();
-    const pos = e.center.clone().addScaledVector(e.normal, d)
-      .addScaledVector(right, -rx * d * tanV * aspect)
-      .addScaledVector(UP, -ry * d * tanV);
-    const q = new THREE.Quaternion().setFromRotationMatrix(m4.lookAt(pos, pos.clone().sub(e.normal), UP));
-    return { pos, q };
-  }
-
-  // Look into the right-hand corner, stepped back until every "Cerita Kami" photo fits.
-  function storyPose(camera) {
-    const list = Object.values(entries).filter((e) => e.group === 'story');
-    const target = new THREE.Vector3();
-    for (const e of list) target.add(e.center);
-    target.divideScalar(list.length);
-    const dir = target.clone().sub(new THREE.Vector3(0.5, target.y, 3.5)).normalize();
-    const right = new THREE.Vector3().crossVectors(dir, UP).normalize();
-    const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    let ext = 0;
-    for (const e of list) ext = Math.max(ext, Math.abs(e.center.clone().sub(target).dot(right)) + e.w / 2 + 0.4);
-    const d = Math.max(5, ext / (tanV * camera.aspect));
-    const pos = target.clone().addScaledVector(dir, -d);
-    pos.x = Math.max(-8.5, pos.x);
-    pos.z = Math.min(11, pos.z);
-    const q = new THREE.Quaternion().setFromRotationMatrix(m4.lookAt(pos, target, UP));
-    return { pos, q };
-  }
-
-  // Continuous pan through `poses`, never pausing: it lingers (slow) on every pose and
-  // moves quicker only in the gaps between them. `u` runs 0 .. poses.length - 1.
-  function makeTour(poses, dur) {
-    const N = 240;
-    const gaps = poses.length - 1;
-    const speed = (t) => {
-      let v = 0.22;
-      for (let k = 0; k < gaps; k++) v += Math.exp(-(((t - (k + 0.5) / gaps) / (0.2 / gaps)) ** 2)); // quicker between poses
-      return v
-        * Math.min(1, t / 0.1)             // ease out of the first pose
-        * Math.min(1, (1 - t) / 0.12);     // come to rest on the last
-    };
-    const table = new Float32Array(N + 1);
-    for (let i = 1; i <= N; i++) table[i] = table[i - 1] + speed((i - 0.5) / N);
-    const total = table[N];
-    for (let i = 0; i <= N; i++) table[i] = (table[i] / total) * (poses.length - 1);
-    return {
-      poses, dur, t: 0, active: false,
-      curve: new THREE.CatmullRomCurve3(poses.map((p) => p.pos), false, 'centripetal'),
-      at(tau) {
-        const f = Math.min(1, Math.max(0, tau)) * N, i = Math.min(N - 1, Math.floor(f));
-        return table[i] + (table[i + 1] - table[i]) * (f - i);
-      },
-      u: 0,
-    };
-  }
-
-  function stepTour(dt) {
-    const tour = cam.tour;
-    tour.t = Math.min(tour.dur, tour.t + dt);
-    tour.u = tour.at(tour.t / tour.dur);
-    const last = tour.poses.length - 1;
-    tour.curve.getPoint(tour.u / last, raw.pos);
-    const i = Math.min(last - 1, Math.floor(tour.u));
-    raw.q.slerpQuaternions(tour.poses[i].q, tour.poses[i + 1].q, tour.u - i);
-  }
-
-  const raycaster = new THREE.Raycaster();
-  const ndc = new THREE.Vector2();
-
   return {
     scene,
-    // label anchors for the three clickable groups
-    anchors: {
-      couple: new THREE.Vector3(0.9, 4.45, -11.8),
-      map: new THREE.Vector3(MAP_BOARD.pos[0], 4.2, -11.8),
-      rsvp: new THREE.Vector3(DESK_X, 0.55, -8.64), // middle of the desk's black front: gold on black stands out
-      story: new THREE.Vector3(8.0, 4.5, -5.7),
-      gift: new THREE.Vector3(GIFT.x, 1.55, GIFT.z),
-    },
     enter(camera) {
       // the room is ~24 m deep: a tight far plane gives the depth buffer far more precision
       // than the outdoor scene's 600 m, which keeps close layers (frame, mat, photo) from flickering
@@ -483,123 +346,23 @@ export function createLobby() {
       camera.position.copy(cam.start);
       camera.quaternion.identity();
       raw.pos.copy(cam.start);
-      raw.prev.copy(cam.start);
-      raw.vel.set(0, 0, 0);
       raw.q.identity();
       raw.snap = true;
-      glide(camera, null, 3.5);
+      glide(3.5);
     },
     update(camera, t, dt, pointer) {
       fitCamera(camera);
       cam.euler.set(0.03 - pointer.sy * 0.2, Math.sin(t * 0.15) * 0.03 - pointer.sx * 0.65, 0);
       cam.restQ.setFromEuler(cam.euler);
       cam.k = Math.min(1, cam.k + dt / cam.dur);
-      if (cam.tour && cam.k >= 1) {
-        cam.tour.active = true;
-        stepTour(dt);
-      } else {
-        const e = ease(cam.k), k = cam.k;
-        raw.pos.lerpVectors(cam.fromPos, cam.to ? cam.to.pos : cam.rest, e);
-        // keep the motion we had when this glide began, fading it out (Hermite start tangent)
-        raw.pos.addScaledVector(v0, cam.dur * k * (1 - k) * (1 - k));
-        raw.q.slerpQuaternions(cam.fromQ, cam.to ? cam.to.q : cam.restQ, e);
-      }
-      // follow the target pose with a little lag, so a move interrupted mid-way
-      // (or a new one starting) blends in instead of snapping
-      if (dt > 0) raw.vel.subVectors(raw.pos, raw.prev).divideScalar(dt);
-      raw.prev.copy(raw.pos);
+      const e = ease(cam.k);
+      raw.pos.lerpVectors(cam.fromPos, cam.rest, e);
+      raw.q.slerpQuaternions(cam.fromQ, cam.restQ, e);
+      // follow the target pose with a little lag, so the sway blends in instead of snapping
       const a = raw.snap ? 1 : 1 - Math.exp(-dt / SMOOTH);
       raw.snap = false;
       camera.position.lerp(raw.pos, a);
       camera.quaternion.slerp(raw.q, a);
-    },
-    settled() { return cam.k >= 1; },
-    // where an item's frame is on screen right now, in pixels (for cards attached beside it)
-    screenRect(camera, id, w, h) {
-      const e = entries[id];
-      const right = new THREE.Vector3().crossVectors(e.normal.clone().negate(), UP).normalize();
-      const pad = e.pad ?? 0.18; // photo frames stick out 18 cm past the picture
-      let l = Infinity, r = -Infinity, t = Infinity, b = -Infinity;
-      for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
-        const p = e.center.clone()
-          .addScaledVector(right, sx * (e.w / 2 + pad))
-          .addScaledVector(UP, sy * (e.h / 2 + pad))
-          .project(camera);
-        const px = ((p.x + 1) / 2) * w, py = ((1 - p.y) / 2) * h;
-        l = Math.min(l, px); r = Math.max(r, px); t = Math.min(t, py); b = Math.max(b, py);
-      }
-      return { left: l, right: r, top: t, bottom: b };
-    },
-    goRest(camera, dur = 1.4) { glide(camera, null, dur); },
-    goItem(camera, id, layout, dur, reserve) { glide(camera, poseFor(camera, entries[id], layout, reserve), dur); },
-    goStory(camera, dur = 1.8) { glide(camera, storyPose(camera), dur); },
-    // Stand at eye level in front of the kotak angpao and look slightly down at it.
-    // The table + box fill `hy` of the screen height and land at (ndcX, ndcY) on screen.
-    goGift(camera, { ndcX = 0, ndcY = 0, hy = 0.55 }, dur) {
-      const e = entries.gift;
-      const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-      const d = (e.h / 2 + 0.06) / (hy * tanV);
-      const right = new THREE.Vector3().crossVectors(e.normal.clone().negate(), UP).normalize();
-      const pos = e.center.clone().addScaledVector(e.normal, d).setY(1.7);
-      const target = e.center.clone().setY(0.85)
-        .addScaledVector(right, -ndcX * d * tanV * camera.aspect)
-        .addScaledVector(UP, -ndcY * d * tanV);
-      glide(camera, { pos, q: new THREE.Quaternion().setFromRotationMatrix(m4.lookAt(pos, target, UP)) }, dur);
-    },
-    // Look at the door from the right, turned slightly left (the map and desk stay in view),
-    // sized so the door fills about `fx` x `fy` of the screen and lands at `ndcX` across it.
-    // Returns where the door's centre will be on screen (0..1) so the RSVP card can cover it.
-    goDoor(camera, fx, fy, ndcX, dur) {
-      const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-      const tanH = tanV * camera.aspect;
-      const angle = THREE.MathUtils.degToRad(camera.aspect >= 1 ? 36 : 24); // how far round to the right the camera stands
-      const turn = Math.atan(-ndcX * tanH);                                  // extra turn right so the door sits at ndcX
-      const center = new THREE.Vector3(DOOR.x, DOOR.h / 2, -11.95);
-      const toCam = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle));
-      const d = Math.max(
-        DOOR.h / (2 * tanV * fy * Math.cos(turn)),
-        (DOOR.w * Math.cos(angle)) / (2 * tanH * fx * Math.cos(turn)),
-      );
-      const pos = center.clone().addScaledVector(toCam, d);
-      pos.y = 2.35; // a touch above eye level keeps the lounge chairs out of the bottom of the frame
-      const lookDir = toCam.clone().negate().applyAxisAngle(UP, -turn);
-      const q = new THREE.Quaternion().setFromRotationMatrix(m4.lookAt(pos, pos.clone().add(lookDir), UP));
-      glide(camera, { pos, q }, dur);
-      // where the door will sit once the camera arrives
-      const probe = camera.clone();
-      probe.position.copy(pos);
-      probe.quaternion.copy(q);
-      probe.updateMatrixWorld();
-      const v = center.clone().project(probe);
-      return { x: (v.x + 1) / 2, y: (1 - v.y) / 2 };
-    },
-    // glide to the first item, then pan continuously through the rest
-    goTour(camera, ids, layout, glideDur, panDur, reserve) {
-      const poses = ids.map((id) => poseFor(camera, entries[id], layout, reserve));
-      glide(camera, poses[0], glideDur);
-      cam.tour = makeTour(poses, panDur);
-    },
-    // -1 until the pan starts, then 0 .. ids.length - 1
-    tourProgress() { return cam.tour && cam.tour.active ? cam.tour.u : -1; },
-    tourDone() { return !cam.tour || cam.tour.t >= cam.tour.dur; },
-    // screen-space pick -> wall item (or null)
-    pick(camera, x, y) {
-      ndc.set(x, y);
-      raycaster.setFromCamera(ndc, camera);
-      const hit = raycaster.intersectObjects(pickables, false)[0];
-      return hit ? hit.object.userData.entry : null;
-    },
-    // gold frames around the group under the cursor
-    highlight(group) {
-      for (const e of Object.values(entries)) {
-        const on = group && e.group === group;
-        if (e.glow) {
-          for (const m of e.glow) m.emissive.copy(GOLD).multiplyScalar(on ? 0.22 : 0);
-          continue;
-        }
-        e.frameMat.color.copy(on ? GOLD : DARK);
-        e.frameMat.emissive.copy(on ? GOLD : DARK).multiplyScalar(on ? 0.45 : 0);
-      }
     },
   };
 }
