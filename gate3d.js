@@ -24,16 +24,16 @@ function init() {
 
   const scene = new THREE.Scene();
   scene.background = skyTexture();
-  scene.fog = new THREE.Fog(0xcfe4f5, 80, 260); // light daytime haze toward the horizon
+  scene.fog = new THREE.Fog(0x1d2b52, 80, 260);
 
   const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 600);
 
-  // ---------- lights (bright daylight) ----------
-  scene.add(new THREE.HemisphereLight(0xd6ebff, 0x8a7a64, 1.7));
-  const sun = new THREE.DirectionalLight(0xfff4e0, 2.2);
-  sun.position.set(-25, 45, 40);
-  scene.add(sun);
-  const uplight = new THREE.DirectionalLight(0xffc98a, 0.35); // a touch of warmth on the façade
+  // ---------- lights (night) ----------
+  scene.add(new THREE.HemisphereLight(0x8aa2e0, 0x3a2e24, 1.3));
+  const moon = new THREE.DirectionalLight(0xb4c4ff, 1.1);
+  moon.position.set(-25, 35, 40);
+  scene.add(moon);
+  const uplight = new THREE.DirectionalLight(0xffc98a, 0.9); // warm façade uplights
   uplight.position.set(12, 3, 30);
   scene.add(uplight);
   const porticoLight = new THREE.PointLight(0xffc27a, 45, 22, 1.6);
@@ -59,7 +59,7 @@ function init() {
     leaf: std(0x2c4a2c),
     leaf2: std(0x3a5a34),
     palm: std(0x3f6b3a),
-    ground: std(0x5a5d63, { roughness: 1 }),
+    ground: std(0x2f323a, { roughness: 1 }),
     glow: new THREE.MeshBasicMaterial({ color: 0xffd9a0 }),
     water: new THREE.MeshStandardMaterial({ color: 0x0f2438, roughness: 0.15, metalness: 0.4, emissive: 0x0b2030, envMap }),
   };
@@ -81,15 +81,41 @@ function init() {
 
   const T = makeTextures();
 
-  // ---------- background tower (curved, blue-glass centre) ----------
-  const towerR = 42, towerZ = -60;
-  const towerMat = new THREE.MeshStandardMaterial({ map: T.facade, emissiveMap: T.facadeGlow, emissive: 0xffffff, emissiveIntensity: 0.15, roughness: 0.9 }); // windows barely lit by day
-  T.facade.repeat.set(11, 2); T.facadeGlow.repeat.set(11, 2);
-  add(new THREE.CylinderGeometry(towerR, towerR, 40, 48, 1, true, -1.1, 2.2), towerMat, 0, 20, towerZ);
-  const glassMat = new THREE.MeshStandardMaterial({ map: T.glass, emissiveMap: T.glassGlow, emissive: 0xffffff, emissiveIntensity: 0.35, roughness: 0.3, metalness: 0.2 });
-  add(new THREE.CylinderGeometry(towerR + 0.6, towerR + 0.6, 38, 16, 1, true, -0.32, 0.64), glassMat, 0, 19, towerZ);
-  add(new THREE.CylinderGeometry(towerR + 0.8, towerR + 0.8, 1.4, 48, 1, true, -1.1, 2.2), M.trim, 0, 40.4, towerZ);
-  add(new THREE.CylinderGeometry(towerR + 1.2, towerR + 1.2, 1.6, 16, 1, true, -0.36, 0.72), M.dome, 0, 38.6, towerZ);
+  // ---------- background tower ----------
+  // Like the real hotel: a wide, flat-fronted white slab with a grid of blue windows, around a
+  // gently bowed blue-glass centre with a white band across its top, capped by a silver barrel crown.
+  const TOWER_Z = -28, TOWER_H = 33, TOWER_D = 16; // front face, height, depth of the slab
+  const GLASS_W = 22, WING_W = 26;                 // glass centre, and each white wing beside it
+  const towerMat = new THREE.MeshStandardMaterial({ map: T.facade, emissiveMap: T.facadeGlow, emissive: 0xffffff, roughness: 0.9 }); // some windows lit for the night
+  T.facade.repeat.set(1.5, 1); T.facadeGlow.repeat.set(1.5, 1); // ~12 windows across, 16 floors per wing
+  for (const s of [-1, 1]) {
+    const x = s * (GLASS_W + WING_W) / 2;
+    add(new THREE.BoxGeometry(WING_W, TOWER_H, TOWER_D), towerMat, x, TOWER_H / 2, TOWER_Z - TOWER_D / 2);
+    add(new THREE.BoxGeometry(WING_W + 0.6, 1.2, TOWER_D + 0.6), M.white, x, TOWER_H + 0.6, TOWER_Z - TOWER_D / 2); // roofline cornice
+  }
+  // white core behind the glass (its roof shows between the wings)
+  add(new THREE.BoxGeometry(GLASS_W, TOWER_H + 1.2, TOWER_D - 0.4), M.white, 0, (TOWER_H + 1.2) / 2, TOWER_Z - 0.2 - (TOWER_D - 0.4) / 2);
+  // the glass bows ~2 m out past the wings and meets them flush at its edges
+  const GR = 30, BOW = 2;
+  const glassZ = TOWER_Z + BOW - GR;
+  const arc = Math.asin(GLASS_W / 2 / GR);
+  const glassMat = new THREE.MeshStandardMaterial({ map: T.glass, emissiveMap: T.glassGlow, emissive: 0xffffff, roughness: 0.25, metalness: 0.3, envMap });
+  add(new THREE.CylinderGeometry(GR, GR, TOWER_H, 20, 1, true, -arc, arc * 2), glassMat, 0, TOWER_H / 2, glassZ);
+  // white bands curving across the glass: a wide one near the top, a slimmer one at the roofline
+  add(new THREE.CylinderGeometry(GR + 0.9, GR + 0.9, 1.8, 20, 1, false, -arc, arc * 2), M.white, 0, TOWER_H - 6, glassZ);
+  add(new THREE.CylinderGeometry(GR + 0.4, GR + 0.4, 1.2, 20, 1, false, -arc, arc * 2), M.white, 0, TOWER_H + 0.6, glassZ);
+  // silver crown on the roof over the glass centre: the lower half of a long capsule (flat on top,
+  // rounded at the ends), stretched to twice its height, its base just below the cornice
+  const CROWN_R = 4.6, CROWN_L = GLASS_W + 6, CROWN_SY = 1.4;
+  const crownGeo = new THREE.CapsuleGeometry(CROWN_R, CROWN_L, 6, 24);
+  crownGeo.rotateZ(Math.PI / 2);
+  const cp = crownGeo.attributes.position;
+  for (let i = 0; i < cp.count; i++) cp.setY(i, Math.min(0, cp.getY(i))); // cut the upper half flat
+  cp.needsUpdate = true;
+  crownGeo.computeVertexNormals();
+  const crown = add(crownGeo, new THREE.MeshStandardMaterial({ color: 0xd3d8df, metalness: 0.55, roughness: 0.35, envMap, flatShading: true }), 0, 0, TOWER_Z - 4.6);
+  crown.scale.set(1, CROWN_SY, 0.9);
+  crown.position.y = TOWER_H - 0.62 + CROWN_R * CROWN_SY; // flat top ~4.6 m above the roof
 
   // ---------- main façade ----------
   const warmWin = texMat(T.warmWindow);
@@ -240,7 +266,7 @@ function init() {
   const plaza = add(new THREE.CircleGeometry(16, 48), new THREE.MeshStandardMaterial({ map: T.paving, roughness: 1 }), 0, 0.02, FZ);
   plaza.rotation.x = -Math.PI / 2;
   const pool = add(new THREE.PlaneGeometry(46, 30), new THREE.MeshBasicMaterial({
-    map: T.glowDot, color: 0xffb865, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false,
+    map: T.glowDot, color: 0xffb865, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false,
   }), 0, 0.05, FZ - 2);
   pool.rotation.x = -Math.PI / 2;
   const curbMat =new THREE.MeshStandardMaterial({ map: T.curb, roughness: 0.9 });
@@ -265,7 +291,7 @@ function init() {
   for (const [x, z] of [[-7.4, 7.5], [7.4, 7.5], [-12, 12], [12, 12]]) {
     add(new THREE.CylinderGeometry(0.07, 0.1, 3, 5), M.dark, x, 1.5, z);
     add(new THREE.SphereGeometry(0.22, 8, 6), M.glow, x, 3.1, z);
-    glowSprite(x, 3.1, z, 1.4, 0xffc98a, 0.35); // daytime: the lamps are only faintly lit
+    glowSprite(x, 3.1, z, 2.4);
   }
   // portico downlights
   for (const [r, th] of [[2, 0], [4, -0.7], [4, 0.7], [4.8, -1.3], [4.8, 1.3], [2.6, -1.1], [2.6, 1.1]]) {
@@ -275,7 +301,9 @@ function init() {
   glowSprite(0, 2.4, -6.5, 6, 0xfff2d6, 0.9); // light at the end of the hall, seen once the doors open
   const statueGlow = glowSprite(0, 5.2, FZ + 0.5, 5, 0xffd48a, 0.25);
 
-  // ---------- gold motes ----------
+  // ---------- stars + gold motes ----------
+  const stars = pointsCloud(260, () => [(Math.random() - 0.5) * 420, 45 + Math.random() * 150, -150 - Math.random() * 60], 1.4, 0xdfe6ff, false);
+  scene.add(stars);
   const MOTES = 220;
   const motes = pointsCloud(MOTES, () => [(Math.random() - 0.5) * 60, Math.random() * 26, -6 + Math.random() * 34], 0.28, 0xffd98a, true);
   scene.add(motes);
@@ -691,12 +719,10 @@ function rng(seed) {
 function skyTexture() {
   return canvasTex(8, 512, (g, w, h) => {
     const grd = g.createLinearGradient(0, 0, 0, h);
-    // bright daytime blue, paling toward the horizon
-    // (a notch brighter than the target: tone mapping darkens it a little)
-    grd.addColorStop(0, '#4f9cf0');
-    grd.addColorStop(0.45, '#7dbdf6');
-    grd.addColorStop(0.8, '#bfe0fb');
-    grd.addColorStop(1, '#e8f4fd');
+    grd.addColorStop(0, '#050817');
+    grd.addColorStop(0.4, '#101f4a');
+    grd.addColorStop(0.75, '#28427e');
+    grd.addColorStop(1, '#3d5288');
     g.fillStyle = grd;
     g.fillRect(0, 0, w, h);
   });
@@ -714,12 +740,13 @@ function makeTextures() {
     const gg = glow.getContext('2d');
     gg.fillStyle = '#000'; gg.fillRect(0, 0, glow.width, glow.height);
     T.facade = canvasTex(cols * cw, rows * ch, (g, w, h) => {
-      g.fillStyle = '#c3c6d0'; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#e4e6ea'; g.fillRect(0, 0, w, h);
       for (let y = 0; y < rows; y++) {
-        g.fillStyle = '#bfc2cc'; g.fillRect(0, y * ch + ch - 3, w, 3);
+        g.fillStyle = '#d6d9df'; g.fillRect(0, y * ch + ch - 3, w, 3);
         for (let x = 0; x < cols; x++) {
           const px = x * cw + 6, py = y * ch + 7;
-          g.fillStyle = '#2b4f8f'; g.fillRect(px, py, 20, 18);
+          g.fillStyle = '#23324a'; g.fillRect(px - 1, py - 1, 22, 20); // dark frame
+          g.fillStyle = '#3f6f9f'; g.fillRect(px, py, 20, 18);
           const v = r();
           gg.fillStyle = v < 0.16 ? '#ffcf8a' : v < 0.5 ? '#1a3570' : '#0a1838';
           gg.fillRect(px, py, 20, 18);
@@ -731,7 +758,7 @@ function makeTextures() {
     T.facadeGlow.wrapS = T.facadeGlow.wrapT = THREE.RepeatWrapping;
   }
 
-  // curved glass centre
+  // bowed glass centre (blue-teal curtain wall)
   {
     const cols = 6, rows = 24, cw = 42, ch = 21;
     const r = rng(21);
@@ -739,10 +766,10 @@ function makeTextures() {
     glow.width = cols * cw; glow.height = rows * ch;
     const gg = glow.getContext('2d');
     T.glass = canvasTex(cols * cw, rows * ch, (g, w, h) => {
-      g.fillStyle = '#0c1c3c'; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#1b3550'; g.fillRect(0, 0, w, h);
       gg.fillStyle = '#000'; gg.fillRect(0, 0, w, h);
       for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-        g.fillStyle = '#1f4fa8'; g.fillRect(x * cw + 2, y * ch + 2, cw - 4, ch - 4);
+        g.fillStyle = y % 2 ? '#3a7aa8' : '#347099'; g.fillRect(x * cw + 2, y * ch + 2, cw - 4, ch - 4);
         const v = r();
         gg.fillStyle = v < 0.1 ? '#ffd7a0' : v < 0.6 ? '#1f4bb0' : '#133276';
         gg.fillRect(x * cw + 2, y * ch + 2, cw - 4, ch - 4);

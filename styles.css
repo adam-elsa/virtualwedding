@@ -117,7 +117,9 @@ a{color:inherit;}
   inset:0;
   z-index:50;
   overflow:hidden;
-  background:linear-gradient(180deg,#3f8fe6,#6cb0f0 45%,#b3d8f7 80%,#e0f0fb); /* the daytime sky, until the 3D scene is up */
+  background:
+    radial-gradient(circle at 50% 20%, rgba(203,161,92,0.12), transparent 60%),
+    linear-gradient(160deg,var(--bg-0),var(--bg-1) 60%,var(--bg-0));
   transition:opacity .8s ease, visibility .8s ease;
 }
 .gate.gate-hidden{opacity:0;visibility:hidden;pointer-events:none;}
@@ -137,7 +139,7 @@ a{color:inherit;}
   inset:0;
   pointer-events:none;
 }
-/* opening screen: all the text sits at the top, so shade the (bright sky) top a little; walk + story: top and bottom */
+/* opening screen: all the text sits at the top, so shade the top; walk + story: top and bottom */
 .gate-scrim::before, .gate-scrim::after{
   content:'';
   position:absolute;
@@ -146,13 +148,13 @@ a{color:inherit;}
 }
 .gate-scrim::before{
   background:linear-gradient(to bottom,
-    rgba(8,28,64,0.34) 0%, rgba(8,28,64,0.22) 28%, rgba(8,28,64,0.07) 46%, transparent 60%,
-    transparent 82%, rgba(10,9,12,0.35) 100%);
+    rgba(5,8,23,0.88) 0%, rgba(5,8,23,0.7) 28%, rgba(5,8,23,0.3) 46%, transparent 60%,
+    transparent 82%, rgba(10,9,12,0.5) 100%);
 }
 .gate-scrim::after{
   opacity:0;
   background:linear-gradient(to bottom,
-    rgba(8,28,64,0.55) 0%, rgba(8,28,64,0.25) 22%, transparent 38%,
+    rgba(5,8,23,0.82) 0%, rgba(5,8,23,0.35) 22%, transparent 38%,
     transparent 60%, rgba(10,9,12,0.45) 74%, rgba(10,9,12,0.9) 100%);
 }
 .gate.is-flying .gate-scrim::before{opacity:0;}
@@ -288,7 +290,10 @@ a{color:inherit;}
   from{opacity:0;transform:translateY(14px);}
   to{opacity:1;transform:none;}
 }
-.gate-inner .eyebrow, .gate-names, .gate-venue, .gate-guest{text-shadow:0 2px 18px rgba(0,0,0,0.65);}
+/* a close dark glow so the text reads over the sky and the lit tower alike */
+.gate-inner .eyebrow, .gate-names, .gate-venue, .gate-guest{
+  text-shadow:0 0 3px rgba(0,0,0,0.75), 0 0 10px rgba(0,0,0,0.6), 0 0 24px rgba(0,0,0,0.45), 0 2px 18px rgba(0,0,0,0.5);
+}
 .gate-names{
   font-family:var(--font-display);
   font-weight:500;
