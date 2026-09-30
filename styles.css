@@ -458,6 +458,36 @@ a{color:inherit;}
   position:absolute;inset:0;
   background:linear-gradient(180deg, rgba(20,20,20,0.1) 0%, rgba(20,20,20,0.15) 45%, rgba(20,20,20,0.7) 85%, rgba(20,20,20,0.8) 100%);
 }
+/* the invited guest, pinned to the top of the photo (above our heads) */
+.hero-guest{
+  position:absolute;
+  z-index:3;
+  top:max(22px,env(safe-area-inset-top));
+  left:50%;
+  width:min(600px,calc(100% - 48px)); /* wide enough that long family names wrap at most once */
+  margin-left:max(-300px,calc(24px - 50%));
+  text-align:center;
+  color:var(--charcoal);
+}
+.hero-guest-to, .hero-guest-at{margin:0;}
+.hero-guest-to, .hero-guest-at{
+  font-size:12px;
+  letter-spacing:0.08em;
+  color:rgba(56,56,56,0.85);
+}
+.hero-guest-name{
+  font-family:var(--font-display);
+  font-size:clamp(24px,4.4vw,34px);
+  line-height:1.2;
+  margin:6px 0 4px;
+  color:var(--charcoal);
+  overflow-wrap:anywhere;
+}
+/* tall/narrow screens: a touch smaller */
+@media (max-aspect-ratio:7/8){
+  .hero-guest-to, .hero-guest-at{font-size:11px;}
+  .hero-guest-name{font-size:24px;margin:3px 0 2px;}
+}
 .hero-content{
   position:relative;
   z-index:3;
@@ -466,7 +496,7 @@ a{color:inherit;}
   padding:0 24px calc(var(--curve) + 40px);
   color:#ffffff;
 }
-.hero .eyebrow{color:rgba(255,255,255,0.85);letter-spacing:0.18em;text-transform:none;font-size:15px;}
+.hero .eyebrow{color:rgba(255,255,255,0.85);letter-spacing:0.18em;text-transform:none;font-size:15px;line-height:1.7;}
 .hero-names{
   font-family:var(--font-display);
   font-weight:400;

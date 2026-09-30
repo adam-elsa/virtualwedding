@@ -22,6 +22,8 @@ python -m http.server 8000
 
 Then visit `http://localhost:8000/?to=Nama+Tamu` — the `to` query param personalizes the greeting on the cover screen (and prefills the RSVP name).
 
+Add `simple` to skip the 3D opener and open the invitation page straight away, e.g. `?to=Nama+Tamu&simple` (or just `?simple`). The music then starts on the guest's first tap.
+
 The Claude Code preview (`.claude/launch.json`) serves on port 8811 with `Cache-Control: no-store`, so edits always show on reload.
 
 ## Before you launch — placeholders to fill in

@@ -47,7 +47,7 @@
     <div class="gate-bottom">
       <p class="gate-venue">Golden Boutique Hotel · 24.10.2026</p>
       <div class="gate-divider"></div>
-      <p class="gate-guest">Kepada Bapak/Ibu/Saudara/i,<br><strong id="guestName">Tamu Undangan</strong></p>
+      <p class="gate-guest">Kepada Bapak/Ibu/Saudara/i,<br><strong id="guestName" data-guest>Tamu Undangan</strong></p>
       <button id="openBtn" class="btn-open" type="button">
         <span class="btn-open-icon">✉</span> Buka Undangan
       </button>
@@ -84,8 +84,14 @@
   <section class="hero">
     <div class="parallax-bg" data-parallax style="background-image:url('assets/img/01_Banner.jpg')"></div>
     <div class="hero-overlay"></div>
+    <!-- the invited guest, pinned to the top of the photo (name from ?to=) -->
+    <div class="hero-guest reveal">
+      <p class="hero-guest-to">Kepada Yth. Bapak/Ibu/Saudara/i</p>
+      <p class="hero-guest-name" data-guest>Tamu Undangan</p>
+      <p class="hero-guest-at">di tempat</p>
+    </div>
     <div class="hero-content reveal">
-      <p class="eyebrow">Undangan Pernikahan</p>
+      <p class="eyebrow">Kami mengundang anda<br>di Pernikahan</p>
       <h2 class="hero-names">Adam <span class="amp">&amp;</span> Elsa</h2>
       <p class="hero-date">24 Oktober 2026</p>
       <div class="scroll-cue" aria-hidden="true">

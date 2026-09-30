@@ -10,8 +10,8 @@
   const params = new URLSearchParams(window.location.search);
   const guest = params.get('to') || params.get('nama');
   if (guest) {
-    const el = document.getElementById('guestName');
-    if (el) el.textContent = guest;
+    // the opener's greeting and the one at the top of the invitation page
+    document.querySelectorAll('[data-guest]').forEach((el) => { el.textContent = guest; });
   }
 
   // ---------- gate / open invitation ----------
@@ -238,4 +238,25 @@
     });
   }
   wireCopy(document.getElementById('copyGift'), document.getElementById('giftNumber'));
+
+  // ---------- ?simple: straight to the invitation page ----------
+  // e.g. ?to=Nama+Tamu&simple skips the 3D opener (runs before gate3d.js, which then finds no gate).
+  // Browsers only allow music after a tap, so it starts on the guest's first tap anywhere.
+  if (params.has('simple')) {
+    gate.remove();
+    siteMain.hidden = false;
+    document.body.style.overflow = '';
+    initReveal();
+    updateParallax();
+    const icon = musicToggle.querySelector('.music-icon');
+    musicToggle.hidden = false;
+    icon.classList.add('paused');
+    const startMusic = (e) => {
+      document.removeEventListener('pointerdown', startMusic);
+      if (e.target.closest('#musicToggle')) return; // the button handles its own tap
+      bgm.volume = 0.5;
+      bgm.play().then(() => icon.classList.remove('paused')).catch(() => {});
+    };
+    document.addEventListener('pointerdown', startMusic);
+  }
 })();
