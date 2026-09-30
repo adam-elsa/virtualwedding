@@ -4,14 +4,14 @@
   // ---------- CONFIG ----------
   // TODO: paste your deployed Google Apps Script Web App URL here (see gas/rsvp-endpoint.gs + README).
   const RSVP_ENDPOINT_URL = '';
-  const WEDDING_DATE = new Date('2026-10-24T13:00:00+07:00'); // Akad time, used for countdown
+  const WEDDING_DATE = new Date('2026-10-24T12:30:00+07:00'); // Akad time, used for countdown
 
   // ---------- guest name from URL ----------
   const params = new URLSearchParams(window.location.search);
   const guest = params.get('to') || params.get('nama');
   if (guest) {
-    const el = document.getElementById('guestName');
-    if (el) el.textContent = guest;
+    // the opener's greeting and the one at the top of the invitation page
+    document.querySelectorAll('[data-guest]').forEach((el) => { el.textContent = guest; });
   }
 
   // ---------- gate / open invitation ----------
@@ -35,8 +35,8 @@
       // autoplay blocked; user can tap the music button manually
       musicToggle.querySelector('.music-icon').classList.add('paused');
     });
-    // 3D gate (gate3d.js): walk in, verse, lobby — resolves when the guest
-    // taps "Buka Undangan Simple" (or right away if the scene never loaded)
+    // 3D gate (gate3d.js): the walk up to the hotel with the verse and our story —
+    // resolves as the doors open (or right away if the scene never loaded)
     const scene3d = window.weddingGate;
     Promise.resolve(scene3d ? scene3d.flyIn() : null).then(revealSite, revealSite);
   }
@@ -179,7 +179,6 @@
   }
   loadWishes();
 
-  // the invitation's form and the one at the lobby reception share this
   function wireRsvp(form) {
     if (!form) return;
     const status = form.querySelector('.rsvp-status');
@@ -224,9 +223,8 @@
     });
   }
   wireRsvp(rsvpForm);
-  wireRsvp(document.getElementById('lobbyRsvpForm'));
 
-  // ---------- copy gift number (invitation + lobby kotak angpao) ----------
+  // ---------- copy gift number ----------
   function wireCopy(btn, numberEl) {
     if (!btn || !numberEl) return;
     btn.addEventListener('click', async () => {
@@ -240,5 +238,25 @@
     });
   }
   wireCopy(document.getElementById('copyGift'), document.getElementById('giftNumber'));
-  wireCopy(document.getElementById('lobbyCopyGift'), document.getElementById('lobbyGiftNumber'));
+
+  // ---------- ?simple: straight to the invitation page ----------
+  // e.g. ?to=Nama+Tamu&simple skips the 3D opener (runs before gate3d.js, which then finds no gate).
+  // Browsers only allow music after a tap, so it starts on the guest's first tap anywhere.
+  if (params.has('simple')) {
+    gate.remove();
+    siteMain.hidden = false;
+    document.body.style.overflow = '';
+    initReveal();
+    updateParallax();
+    const icon = musicToggle.querySelector('.music-icon');
+    musicToggle.hidden = false;
+    icon.classList.add('paused');
+    const startMusic = (e) => {
+      document.removeEventListener('pointerdown', startMusic);
+      if (e.target.closest('#musicToggle')) return; // the button handles its own tap
+      bgm.volume = 0.5;
+      bgm.play().then(() => icon.classList.remove('paused')).catch(() => {});
+    };
+    document.addEventListener('pointerdown', startMusic);
+  }
 })();

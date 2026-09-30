@@ -17,7 +17,7 @@
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Great+Vibes&family=Amiri:wght@400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Serif+Display:ital@0;1&family=Great+Vibes&family=Amiri:wght@400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -47,99 +47,12 @@
     <div class="gate-bottom">
       <p class="gate-venue">Golden Boutique Hotel · 24.10.2026</p>
       <div class="gate-divider"></div>
-      <p class="gate-guest">Kepada Bapak/Ibu/Saudara/i,<br><strong id="guestName">Tamu Undangan</strong></p>
+      <p class="gate-guest">Kepada Bapak/Ibu/Saudara/i,<br><strong id="guestName" data-guest>Tamu Undangan</strong></p>
       <button id="openBtn" class="btn-open" type="button">
         <span class="btn-open-icon">✉</span> Buka Undangan
       </button>
     </div>
   </div>
-  <!-- inside the lobby: look around, tap a photo, continue to the invitation -->
-  <div class="lobby-ui" id="lobbyUi">
-    <div class="lobby-top">
-      <p class="eyebrow">Selamat Datang</p>
-      <h2 class="lobby-title">Momen Kami</h2>
-      <p class="lobby-hint" id="lobbyHint"></p>
-    </div>
-    <div class="lobby-story-head">
-      <p class="eyebrow">Cerita Kami</p>
-      <p class="lobby-hint">Ketuk foto untuk melihat lebih dekat</p>
-    </div>
-    <!-- labels floating over each photo group (positioned by gate3d.js) -->
-    <button class="lobby-tag" data-group="couple" type="button">Kedua Mempelai</button>
-    <button class="lobby-tag" data-group="map" type="button">Lokasi &amp; Tempat</button>
-    <button class="lobby-tag lobby-tag--cta" data-group="rsvp" type="button">RSVP</button>
-    <button class="lobby-tag" data-group="story" type="button">Cerita Kami</button>
-    <button class="lobby-tag" data-group="gift" type="button">Amplop Digital</button>
-    <!-- info card beside the photo being viewed; data-show picks the section -->
-    <div class="lobby-card" id="lobbyCard">
-      <section data-card="groom">
-        <p class="eyebrow">Mempelai Pria</p>
-        <h3 class="card-name">Adam</h3>
-        <p class="card-sub">Putra dari</p>
-        <p class="card-parents">Bapak Badru Kamal<br>&amp; Ibu Ika Kurniaputri</p>
-      </section>
-      <section data-card="couple">
-        <p class="eyebrow">Kedua Mempelai</p>
-        <h3 class="card-name">Adam <span class="amp">&amp;</span> Elsa</h3>
-      </section>
-      <section data-card="bride">
-        <p class="eyebrow">Mempelai Wanita</p>
-        <h3 class="card-name">Elsa</h3>
-        <p class="card-sub">Putri dari</p>
-        <p class="card-parents">Bapak Muhammad Hasan<br>&amp; Ibu Damini</p>
-      </section>
-      <!-- same as the invitation's "Amplop Digital" section -->
-      <section data-card="gift">
-        <p class="eyebrow">Amplop Digital</p>
-        <h3 class="card-title">Hadiah Pernikahan</h3>
-        <p class="card-sub">Doa restu Bapak/Ibu/Saudara/i adalah hadiah terindah bagi kami. Namun jika ingin memberi tanda kasih, dapat melalui:</p>
-        <div class="card-gift">
-          <p class="gift-bank">BCA</p>
-          <p class="gift-number" id="lobbyGiftNumber">8691241238</p>
-          <p class="gift-holder">a.n. Elsa</p>
-        </div>
-        <button class="btn-solid card-btn" id="lobbyCopyGift" type="button">Salin Nomor Rekening</button>
-      </section>
-      <section data-card="rsvp">
-        <p class="eyebrow">RSVP</p>
-        <h3 class="card-title">Konfirmasi Kehadiran</h3>
-        <form class="card-form" id="lobbyRsvpForm">
-          <input type="text" name="name" placeholder="Nama" aria-label="Nama" required autocomplete="name">
-          <select name="attendance" aria-label="Kehadiran" required>
-            <option value="">Kehadiran...</option>
-            <option value="Hadir">Saya akan hadir</option>
-            <option value="Tidak Hadir">Maaf, tidak bisa hadir</option>
-          </select>
-          <label class="card-row">Jumlah tamu <input type="number" name="guests" min="1" max="10" value="1"></label>
-          <textarea name="message" rows="2" placeholder="Doa &amp; ucapan untuk kami (opsional)" aria-label="Doa dan ucapan"></textarea>
-          <button type="submit" class="btn-solid">Kirim</button>
-          <p class="rsvp-status" role="status"></p>
-        </form>
-      </section>
-      <section data-card="map">
-        <p class="eyebrow">Lokasi &amp; Tempat</p>
-        <h3 class="card-title">Golden Boutique Hotel</h3>
-        <p class="card-sub">Jakarta · Sabtu, 24 Oktober 2026</p>
-        <div class="card-map">
-          <iframe data-src="https://www.google.com/maps?q=Golden+Boutique+Hotel+Jakarta&amp;output=embed" title="Peta Golden Boutique Hotel" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        </div>
-        <div class="card-times">
-          <div><span>Akad Nikah</span><strong>13.00 WIB</strong></div>
-          <div><span>Resepsi</span><strong>16.00 WIB</strong></div>
-        </div>
-        <a class="btn-solid card-btn" href="https://www.google.com/maps/search/?api=1&amp;query=Golden+Boutique+Hotel+Jakarta" target="_blank" rel="noopener">Buka Google Maps</a>
-      </section>
-    </div>
-    <div class="lobby-bottom">
-      <button class="btn-outline lobby-back" id="lobbyBack" type="button">← Kembali</button>
-      <!-- the 3D lobby is the invitation; this is the fallback to the plain page -->
-      <button class="btn-outline lobby-next" id="lobbyNext" type="button">
-        Buka Undangan Simple
-        <small>(jika kesulitan di tampilan sekarang)</small>
-      </button>
-    </div>
-  </div>
-  <div class="gate-flash" aria-hidden="true"></div>
   <!-- verse overlaid on the walk up to the doors (gate3d.js toggles .show-ayat) -->
   <div class="gate-ayat">
     <span class="ayat-ornament" aria-hidden="true">❧</span>
@@ -147,7 +60,7 @@
     <p class="ayat-id">“Dan segala sesuatu Kami ciptakan berpasang-pasangan agar kamu mengingat (kebesaran Allah).”</p>
     <p class="ayat-src">QS. Az-Zariyat: 49</p>
   </div>
-  <!-- our story, line by line, over the lobby just after stepping inside -->
+  <!-- our story, line by line, after the verse; as the doors open, the invitation opens -->
   <div class="gate-story">
     <span class="ayat-ornament" aria-hidden="true">❧</span>
     <p class="story-line">Perjalanan kami tidak singkat.</p>
@@ -171,8 +84,14 @@
   <section class="hero">
     <div class="parallax-bg" data-parallax style="background-image:url('assets/img/01_Banner.jpg')"></div>
     <div class="hero-overlay"></div>
+    <!-- the invited guest, pinned to the top of the photo (name from ?to=) -->
+    <div class="hero-guest reveal">
+      <p class="hero-guest-to">Kepada Yth. Bapak/Ibu/Saudara/i</p>
+      <p class="hero-guest-name" data-guest>Tamu Undangan</p>
+      <p class="hero-guest-at">di tempat</p>
+    </div>
     <div class="hero-content reveal">
-      <p class="eyebrow">Undangan Pernikahan</p>
+      <p class="eyebrow">Kami mengundang anda<br>di Pernikahan</p>
       <h2 class="hero-names">Adam <span class="amp">&amp;</span> Elsa</h2>
       <p class="hero-date">24 Oktober 2026</p>
       <div class="scroll-cue" aria-hidden="true">
@@ -185,12 +104,14 @@
   <!-- ============ OPENING QUOTE ============ -->
   <section class="section quote-section">
     <div class="container narrow reveal">
-      <span class="ornament">❧</span>
-      <p class="quote-arabic" lang="ar" dir="rtl">وَمِنْ كُلِّ شَيْءٍ خَلَقْنَا زَوْجَيْنِ لَعَلَّكُمْ تَذَكَّرُوْنَ ﴿٤٩﴾</p>
-      <p class="quote-text">
-        “Dan segala sesuatu Kami ciptakan berpasang-pasangan agar kamu mengingat (kebesaran Allah).”
-      </p>
-      <p class="quote-source">QS. Az-Zariyat: 49</p>
+      <div class="card-soft quote-card">
+        <span class="ornament">❧</span>
+        <p class="quote-arabic" lang="ar" dir="rtl">وَمِنْ كُلِّ شَيْءٍ خَلَقْنَا زَوْجَيْنِ لَعَلَّكُمْ تَذَكَّرُوْنَ ﴿٤٩﴾</p>
+        <p class="quote-text">
+          “Dan segala sesuatu Kami ciptakan berpasang-pasangan agar kamu mengingat (kebesaran Allah).”
+        </p>
+        <p class="quote-source">QS. Az-Zariyat: 49</p>
+      </div>
     </div>
   </section>
 
@@ -200,13 +121,13 @@
       <p class="eyebrow center">Mempelai</p>
       <h2 class="section-title center">Kedua Mempelai</h2>
       <div class="couple-grid">
-        <article class="couple-card">
+        <article class="couple-card card-soft">
           <div class="couple-photo"><img src="assets/img/02_ProfileAdam.jpg" alt="Adam" loading="lazy"></div>
           <h3 class="couple-name">Adam</h3>
           <p class="couple-parents">Putra dari<br><span>Bapak Badru Kamal &amp; Ibu Ika Kurniaputri</span></p>
         </article>
         <div class="couple-amp" aria-hidden="true">&amp;</div>
-        <article class="couple-card">
+        <article class="couple-card card-soft">
           <div class="couple-photo"><img src="assets/img/02_ProfileElsa.jpg" alt="Elsa" loading="lazy"></div>
           <h3 class="couple-name">Elsa</h3>
           <p class="couple-parents">Putri dari<br><span>Bapak Muhammad Hasan &amp; Ibu Damini</span></p>
@@ -264,7 +185,7 @@
           <span class="event-icon">💍</span>
           <h3>Akad Nikah</h3>
           <p class="event-day">Sabtu, 24 Oktober 2026</p>
-          <p class="event-time">13.00 WIB</p>
+          <p class="event-time">12.30 WIB</p>
           <p class="event-venue">Golden Boutique Hotel<br>Jakarta</p>
           <a class="btn-outline" href="https://www.google.com/maps/search/?api=1&query=Golden+Boutique+Hotel+Jakarta" target="_blank" rel="noopener">Lihat Lokasi</a>
         </article>
@@ -322,7 +243,7 @@
         Doa restu Bapak/Ibu/Saudara/i adalah hadiah terindah bagi kami.
         Namun jika ingin memberi tanda kasih, dapat melalui:
       </p>
-      <div class="gift-card">
+      <div class="gift-card card-soft">
         <p class="gift-bank">BCA</p>
         <p class="gift-number" id="giftNumber">8691241238</p>
         <p class="gift-holder">a.n. Elsa</p>
@@ -349,8 +270,8 @@
       <h2 class="section-title center">Momen Kami</h2>
       <div class="gallery-grid">
         <div class="gallery-item"><img src="assets/img/01_Banner.jpg" alt="Adam & Elsa" loading="lazy"></div>
-        <div class="gallery-item"><img src="assets/img/02_ProfileAdam.jpg" alt="Adam" loading="lazy"></div>
-        <div class="gallery-item"><img src="assets/img/02_ProfileElsa.jpg" alt="Elsa" loading="lazy"></div>
+        <div class="gallery-item"><img src="assets/img/09_Galery_2.jpg" alt="Adam & Elsa" loading="lazy"></div>
+        <div class="gallery-item"><img src="assets/img/09_Galery_1.jpg" alt="Adam & Elsa" loading="lazy"></div>
         <div class="gallery-item"><img src="assets/img/04_Venue.jpg" alt="Adam & Elsa" loading="lazy"></div>
         <div class="gallery-item"><img src="assets/img/05_TimingAkadResepsi.jpg" alt="Adam & Elsa" loading="lazy"></div>
         <div class="gallery-item"><img src="assets/img/06_FooterThankyou.jpg" alt="Adam & Elsa" loading="lazy"></div>

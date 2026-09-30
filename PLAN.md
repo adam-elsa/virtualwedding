@@ -4,7 +4,7 @@
 - Couple: **Adam & Elsa**
 - Date: **Saturday, 24 October 2026**
 - Venue: **Golden Boutique Hotel, Jakarta**
-- Akad Nikah: **13.00 WIB**
+- Akad Nikah: **12.30 WIB**
 - Resepsi: **16.00 WIB**
 
 ## Assets we have (`/media`)
@@ -22,13 +22,15 @@
 
 **Design direction:** single-page, mobile-first, dark elegant theme (deep charcoal/black base, warm gold or muted rose accent to match the couple's black-tie photos), soft floating parallax decorations (petals/leaves/light particles), sections blended via gradient transitions rather than hard borders.
 
+**Update (Oct 2026):** the invitation page (after the 3D opening) now follows **template-11g** (hi.nstory.id/template-11g) instead: light theme, white + warm off-white (#f8f7f4) cards with a faint line-art sprig, charcoal (#383838) type, slate-blue (#9da8b7) accent rule, DM Serif Display headings, leaf-shaped photo frames, and soft white curves where full-bleed photos meet the page. The 3D opening keeps the dark night-and-gold look.
+
 ## Site structure (sections, top to bottom)
 1. **Cover / Gate screen** — "You are invited" + guest name from URL query param (`?to=Nama`) + tap-to-open button (also unlocks background music, satisfies mobile autoplay restrictions)
 2. **Opening quote** — Islamic verse (QS. Ar-Rum 21) or your preferred quote — *need your input, see Open Questions*
 3. **The Couple** — Adam & Elsa photos + names + "son/daughter of ..." parents' names — *need parents' names*
 4. **Our Story** (optional, light) — 2–3 short milestones using the extra Ohana Pictures photos
 5. **Save the Date** — big date treatment (24.10.2026) + live countdown timer
-6. **Akad & Resepsi** — two cards: Akad 13.00 WIB / Resepsi 16.00 WIB, both at Golden Boutique Hotel Jakarta, each with a "View on Google Maps" button
+6. **Akad & Resepsi** — two cards: Akad 12.30 WIB / Resepsi 16.00 WIB, both at Golden Boutique Hotel Jakarta, each with a "View on Google Maps" button
 7. **RSVP** — name, attendance (yes/no), guest count, optional message → stored somewhere (see Open Questions)
 8. **Digital Gift (Amplop Digital)** — bank transfer details / e-wallet QR — optional, only if you want it
 9. **Wishes / Guestbook** — list of well-wishes, newest first
