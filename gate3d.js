@@ -100,8 +100,9 @@ function init() {
     add(new THREE.BoxGeometry(WING_W, TOWER_H, TOWER_D), towerMat, x, TOWER_H / 2, TOWER_Z - TOWER_D / 2);
     add(new THREE.BoxGeometry(WING_W + 0.6, 1.2, TOWER_D + 0.6), M.white, x, TOWER_H + 0.6, TOWER_Z - TOWER_D / 2); // roofline cornice
   }
-  // white core behind the glass (its roof shows between the wings)
-  add(new THREE.BoxGeometry(GLASS_W, TOWER_H + 1.2, TOWER_D - 0.4), M.white, 0, (TOWER_H + 1.2) / 2, TOWER_Z - 0.2 - (TOWER_D - 0.4) / 2);
+  // white core behind the glass (its roof shows between the wings); set 0.6 m back so the glass,
+  // whose edges curve back to ~0.1 m behind the wings' front, never z-fights with it on phones
+  add(new THREE.BoxGeometry(GLASS_W, TOWER_H + 1.2, TOWER_D - 0.8), M.white, 0, (TOWER_H + 1.2) / 2, TOWER_Z - 0.6 - (TOWER_D - 0.8) / 2);
   // the glass bows ~2 m out past the wings and meets them flush at its edges
   const GR = 30, BOW = 2;
   const glassZ = TOWER_Z + BOW - GR;
