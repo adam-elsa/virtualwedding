@@ -4,6 +4,12 @@
   // ---------- CONFIG ----------
   // TODO: paste your deployed Google Apps Script Web App URL here (see gas/rsvp-endpoint.gs + README).
   const RSVP_ENDPOINT_URL = '';
+  // RSVPs also go to the RSVP form (Fluent Forms #705) on our NgantenStory invitation,
+  // inv.nstory.id/adam-elsa, so they land in the same entries list as RSVPs made there.
+  // Set to '' to stop sending there.
+  const NSTORY_AJAX_URL = 'https://inv.nstory.id/wp-admin/admin-ajax.php';
+  const NSTORY_FORM_ID = '705';
+  const NSTORY_POST_ID = '25279687'; // the adam-elsa page
   const WEDDING_DATE = new Date('2026-10-24T12:30:00+07:00'); // Akad time, used for countdown
 
   // ---------- guest name from URL ----------
@@ -174,9 +180,35 @@
     return 'sent';
   }
 
+  // Same request the invitation's own form makes: admin-ajax, action=fluentform_submit, the
+  // form's fields serialized into `data`. Cross-site, so the reply can't be read ('no-cors'):
+  // this only fails on a network error, not if the invitation turns the entry down.
+  async function sendToNstory(rsvp) {
+    if (!NSTORY_AJAX_URL) return;
+    const fields = new URLSearchParams({
+      __fluent_form_embded_post_id: NSTORY_POST_ID,
+      _wp_http_referer: '/adam-elsa/',
+      input_text: rsvp.name,
+      input_radio: rsvp.attendance === 'Hadir' ? 'Saya akan hadir' : 'Maaf tidak hadir',
+    });
+    // the invitation only asks "Jumlah Tamu" (1 or 2) of guests who are coming
+    if (rsvp.attendance === 'Hadir') fields.set('dropdown', rsvp.guests);
+    await fetch(NSTORY_AJAX_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: new URLSearchParams({ data: fields.toString(), action: 'fluentform_submit', form_id: NSTORY_FORM_ID }),
+    });
+  }
+
   // ---------- RSVP ----------
   const rsvpForm = document.getElementById('rsvpForm');
   if (guest && !rsvpForm.elements.name.value) rsvpForm.elements.name.value = guest;
+  // "Jumlah Tamu" only for guests who are coming, as on the invitation
+  const guestsGroup = rsvpForm.querySelector('.ff-guests');
+  const syncGuests = () => { guestsGroup.hidden = rsvpForm.elements.attendance.value !== 'Hadir'; };
+  rsvpForm.addEventListener('change', syncGuests);
+  syncGuests();
   rsvpForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const status = rsvpForm.querySelector('.rsvp-status');
@@ -189,14 +221,15 @@
     }
     status.textContent = 'Mengirim...';
     status.className = 'rsvp-status';
+    const rsvp = {
+      name,
+      attendance: rsvpForm.elements.attendance.value,
+      guests: rsvpForm.elements.guests.value,
+      message: '',
+    };
     try {
-      const result = await send({
-        name,
-        attendance: rsvpForm.elements.attendance.value,
-        guests: rsvpForm.elements.guests.value,
-        message: '',
-      });
-      status.textContent = result === 'preview'
+      const [toSheet] = await Promise.all([send(rsvp), sendToNstory(rsvp)]);
+      status.textContent = toSheet === 'preview' && !NSTORY_AJAX_URL
         ? 'Terima kasih! (mode pratinjau — belum tersambung ke Google Sheet)'
         : 'Terima kasih atas konfirmasinya!';
       status.className = 'rsvp-status ok';

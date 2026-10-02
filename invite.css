@@ -265,6 +265,7 @@
 .ff-choice input:checked + span{background:#4e4e4e;border-color:#4e4e4e;color:#ffffff;}
 .ff-choice input:focus-visible + span{box-shadow:0 0 0 2px rgba(0,123,255,0.25);}
 .ff-guests{margin-top:30px;}
+.ff-guests[hidden]{display:none;}
 .ff-submit{text-align:center;}
 .ff-btn{
   padding:8px 20px;border:1px solid #393939;border-radius:0;
