@@ -128,6 +128,9 @@ a{color:inherit;}
   transition:opacity 1.1s ease, transform 1.3s cubic-bezier(.2,.7,.2,1), filter 1.3s ease;
 }
 .gate.show-ayat .gate-ayat > *, .gate.show-story .gate-story > *{opacity:1;transform:none;filter:none;}
+/* get the text layers ready when the page loads, not in the middle of the walk */
+.gate-ayat, .gate-story{will-change:opacity;}
+.gate-ayat > *, .gate-story > *{will-change:opacity, transform;}
 .gate.show-ayat .ayat-ar{transition-delay:.35s;}
 .gate.show-ayat .ayat-id{transition-delay:.9s;}
 .gate.show-ayat .ayat-src{transition-delay:1.3s;}
@@ -181,6 +184,17 @@ a{color:inherit;}
   width:56px;height:1px;
   margin:0 auto 14px;
   background:linear-gradient(90deg,transparent,var(--gold),transparent);
+}
+/* phones: animating a blur over wide glowing text while the 3D scene renders makes the walk
+   hitch as each block appears, so there the lines only rise and fade in, with a lighter glow */
+@media (hover: none), (pointer: coarse){
+  :root{--text-halo:0 0 3px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.9), 0 0 22px rgba(0,0,0,0.8);}
+  .gate-ayat > *, .gate-story > *{
+    filter:none;
+    transition:opacity 1.1s ease, transform 1.3s cubic-bezier(.2,.7,.2,1);
+  }
+  .ayat-ornament{text-shadow:var(--text-halo);}
+  .ayat-ar{text-shadow:var(--text-halo);}
 }
 
 .gate-loader{
