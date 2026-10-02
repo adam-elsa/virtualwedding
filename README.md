@@ -31,7 +31,7 @@ The Claude Code preview (`.claude/launch.json`) serves on port 8811 with `Cache-
 ## Before you launch — placeholders to fill in
 
 - **Google Maps pin**: "Lihat Lokasi" opens the same pin as the original invitation (https://maps.app.goo.gl/CVXyH9ZxdrndSdp88, Golden Boutique Hotel Kemayoran).
-- **Background music**: "I Really Want to Stay at Your House". Phones and tablets get the guitar version (`assets/audio/backsound-guitar.mp3`), computers the orchestra version (`assets/audio/backsound-orchestra.mp3`). The orchestra file is the original, untouched. The guitar file was re-encoded from the original in `music/` (not committed) to 96 kbps MP3 with a short fade in/out for smooth looping: `ffmpeg -i in.mp3 -vn -map_metadata -1 -af "afade=t=in:d=1.5,afade=t=out:st=<duration-3>:d=3" -c:a libmp3lame -b:a 96k out.mp3`.
+- **Background music**: "Tenderness in the Air" from Final Fantasy V, a classical guitar solo (the same recording as the original NgantenStory invitation), in `assets/audio/backsound.mp3` for every device. It was re-encoded from the invitation's file to 128 kbps MP3 with a short fade in/out for smooth looping: `ffmpeg -i in.mp3 -vn -map_metadata -1 -af "afade=t=in:d=1.5,afade=t=out:st=<duration-3>:d=3" -c:a libmp3lame -b:a 128k out.mp3`.
 - **Opening quote**: QS. Az-Zariyat: 49 (Indonesian translation), in the `.inv-verse` section of `index.html`; the 3D walk shows it with the Arabic too.
 
 ## Wiring up RSVP + Guestbook (Google Sheet)

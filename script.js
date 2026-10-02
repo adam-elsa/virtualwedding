@@ -22,9 +22,6 @@
   const musicToggle = document.getElementById('musicToggle');
   const musicIcon = musicToggle.querySelector('.music-icon');
   const bgm = document.getElementById('bgm');
-  // phones & tablets (touch is the main input) get the guitar version; computers the orchestra
-  const onTouchDevice = window.matchMedia('(pointer: coarse)').matches;
-  bgm.src = onTouchDevice ? 'assets/audio/backsound-guitar.mp3' : 'assets/audio/backsound-orchestra.mp3';
 
   // music has to start inside a tap
   function startMusic() {
