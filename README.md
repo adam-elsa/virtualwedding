@@ -5,6 +5,11 @@ Akad 12.30 WIB · Resepsi 16.00 WIB.
 
 Plain HTML/CSS/JS, no build step. See [PLAN.md](PLAN.md) for design decisions.
 
+**Live site:** https://adamvirtualspace-lab.github.io/adamelsaweddingsite/ (GitHub Pages, deployed from `main`)
+
+- With a guest's name: https://adamvirtualspace-lab.github.io/adamelsaweddingsite/?to=Nama+Tamu
+- Without the 3D opener (2D cover instead): https://adamvirtualspace-lab.github.io/adamelsaweddingsite/?to=Nama+Tamu&simple
+
 The opening screen is a low-poly 3D model of the Golden Boutique Hotel ([gate3d.js](gate3d.js), Three.js loaded from jsDelivr). The opening text (names, guest, "Buka Undangan") sits at the top of the screen with the hotel below it.
 
 - **Arrival:** the camera eases in from the left at eye level and keeps strolling slowly toward the hotel. It sways with the mouse (desktop) or the phone's tilt (gyro; iOS asks for permission on the first tap).
@@ -32,7 +37,7 @@ The Claude Code preview (`.claude/launch.json`) serves on port 8811 with `Cache-
 
 - **Google Maps pin**: "Lihat Lokasi" opens the same pin as the original invitation (https://maps.app.goo.gl/CVXyH9ZxdrndSdp88, Golden Boutique Hotel Kemayoran).
 - **Background music**: "Tenderness in the Air" from Final Fantasy V, a classical guitar solo (the same recording as the original NgantenStory invitation), in `assets/audio/backsound.mp3` for every device. It was re-encoded from the invitation's file to 128 kbps MP3 with a short fade in/out for smooth looping: `ffmpeg -i in.mp3 -vn -map_metadata -1 -af "afade=t=in:d=1.5,afade=t=out:st=<duration-3>:d=3" -c:a libmp3lame -b:a 128k out.mp3`.
-- **Opening quote**: QS. Az-Zariyat: 49 (Indonesian translation), in the `.inv-verse` section of `index.html`; the 3D walk shows it with the Arabic too.
+- **Opening quote**: QS. Az-Zariyat: 49 (Indonesian translation), in the `.inv-verse` section of `index.html` and in the 3D walk (`.gate-ayat`).
 
 ## RSVP + guestbook → our NgantenStory invitation
 

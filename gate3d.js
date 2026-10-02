@@ -26,7 +26,10 @@ function init() {
   scene.background = skyTexture();
   scene.fog = new THREE.Fog(0x1d2b52, 80, 260);
 
-  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 600);
+  // near plane at 0.5 m (the walk never comes closer than ~1.5 m to anything): on tall phone
+  // screens the camera stands ~100 m back, where a 0.1 m near plane leaves too little depth
+  // precision and the window panels flicker against the walls behind them
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.5, 600);
 
   // ---------- lights (night) ----------
   scene.add(new THREE.HemisphereLight(0x8aa2e0, 0x3a2e24, 1.3));
@@ -78,6 +81,10 @@ function init() {
   const boxB = (w, h, d, mat, x, y, z, parent) => add(new THREE.BoxGeometry(w, h, d), mat, x, y + h / 2, z, parent);
   const plane = (w, h, mat, x, y, z, parent) => add(new THREE.PlaneGeometry(w, h), mat, x, y, z, parent);
   const texMat = (tex, extra = {}) => new THREE.MeshBasicMaterial({ map: tex, ...extra });
+  // flat panels laid just in front of a wall (windows, bands, signs): nudged toward the camera in
+  // the depth test too, so they always win over the wall instead of z-fighting with it on phones
+  const decal = (mat) => Object.assign(mat, { polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
+  const decalMat = (tex, extra = {}) => decal(texMat(tex, extra));
 
   const T = makeTextures();
 
@@ -93,8 +100,9 @@ function init() {
     add(new THREE.BoxGeometry(WING_W, TOWER_H, TOWER_D), towerMat, x, TOWER_H / 2, TOWER_Z - TOWER_D / 2);
     add(new THREE.BoxGeometry(WING_W + 0.6, 1.2, TOWER_D + 0.6), M.white, x, TOWER_H + 0.6, TOWER_Z - TOWER_D / 2); // roofline cornice
   }
-  // white core behind the glass (its roof shows between the wings)
-  add(new THREE.BoxGeometry(GLASS_W, TOWER_H + 1.2, TOWER_D - 0.4), M.white, 0, (TOWER_H + 1.2) / 2, TOWER_Z - 0.2 - (TOWER_D - 0.4) / 2);
+  // white core behind the glass (its roof shows between the wings); set 0.6 m back so the glass,
+  // whose edges curve back to ~0.1 m behind the wings' front, never z-fights with it on phones
+  add(new THREE.BoxGeometry(GLASS_W, TOWER_H + 1.2, TOWER_D - 0.8), M.white, 0, (TOWER_H + 1.2) / 2, TOWER_Z - 0.6 - (TOWER_D - 0.8) / 2);
   // the glass bows ~2 m out past the wings and meets them flush at its edges
   const GR = 30, BOW = 2;
   const glassZ = TOWER_Z + BOW - GR;
@@ -118,30 +126,34 @@ function init() {
   crown.position.y = TOWER_H - 0.62 + CROWN_R * CROWN_SY; // flat top ~4.6 m above the roof
 
   // ---------- main façade ----------
-  const warmWin = texMat(T.warmWindow);
-  const keyBand = texMat(T.greekKey);
-  const dentil = texMat(T.dentil);
+  const warmWin = decalMat(T.warmWindow);
+  const keyBand = decalMat(T.greekKey);
+  const dentil = decalMat(T.dentil);
 
   // side wings with tall golden windows
   for (const s of [-1, 1]) {
     boxB(3.8, 13.2, 8, M.white, s * 9, 0, -4);
     boxB(4.2, 0.4, 8.4, M.trim, s * 9, 13.2, -4);
     boxB(3.0, 11.6, 0.1, M.dark, s * 9, 0.6, 0.01);
-    plane(2.6, 5.6, warmWin, s * 9, 3.6, 0.07);
-    plane(2.6, 4.8, warmWin, s * 9, 9.3, 0.07);
+    plane(2.6, 5.6, warmWin, s * 9, 3.6, 0.1);
+    plane(2.6, 4.8, warmWin, s * 9, 9.3, 0.1);
     plane(3.8, 0.7, keyBand, s * 9, 12.75, 0.03);
   }
 
   // towers with domes
+  const balustradeMat = decalMat(T.balustrade);
+  const squareWinMat = decalMat(T.squareWindow);
+  const nicheGlow = decal(M.glow.clone());
+  const roundelMat = decal(M.white.clone());
   for (const s of [-1, 1]) {
     const x = s * 5.6;
     boxB(3.6, 15.4, 9, M.white, x, 0, -4.1);
     boxB(4.0, 0.45, 9.4, M.trim, x, 9.2, -4.1);             // mid ledge
-    plane(3.2, 0.7, texMat(T.balustrade), x, 8.7, 0.42);     // balustrade windows
-    add(archGeometry(1.5, 2.4), M.glow, x, 5.2, 0.42);       // glowing niche
+    plane(3.2, 0.7, balustradeMat, x, 8.7, 0.44);            // balustrade windows
+    add(archGeometry(1.5, 2.4), nicheGlow, x, 5.2, 0.44);     // glowing niche
     add(new THREE.TorusGeometry(1.0, 0.13, 6, 20), M.trim, x, 12.6, 0.45);
-    add(new THREE.CircleGeometry(0.98, 20), M.white, x, 12.6, 0.41);
-    plane(0.9, 0.9, texMat(T.squareWindow), x, 12.6, 0.44);
+    add(new THREE.CircleGeometry(0.98, 20), roundelMat, x, 12.6, 0.42);
+    plane(0.9, 0.9, squareWinMat, x, 12.6, 0.46);
     plane(3.6, 0.5, dentil, x, 14.75, 0.42);
     boxB(4.3, 0.55, 9.6, M.trim, x, 15.0, -4.1);             // cornice
     boxB(3.3, 0.6, 8, M.white, x, 15.55, -4.1);
@@ -173,10 +185,10 @@ function init() {
   add(new THREE.ConeGeometry(0.16, 0.7, 5), M.white, 0, 17.45, -1.2);
 
   // "GOLDEN" crest sign above the portico
-  plane(3.6, 1.35, texMat(T.sign, { transparent: true }), 0, 9.6, -0.44);
+  plane(3.6, 1.35, decalMat(T.sign, { transparent: true }), 0, 9.6, -0.44);
 
   // lobby glass wall around the entrance doors
-  const lobbyMat = texMat(T.lobby);
+  const lobbyMat = decalMat(T.lobby);
   for (const s of [-1, 1]) plane(3.3 - DW, 6.6, lobbyMat, s * (DW + (3.3 - DW) / 2), 3.3, -0.46);
   plane(DW * 2, 6.6 - DH, lobbyMat, 0, DH + (6.6 - DH) / 2, -0.46);
   for (const s of [-1, 1]) boxB(0.14, DH + 0.1, 0.22, M.gold, s * (DW + 0.07), 0, -0.5);
@@ -249,11 +261,12 @@ function init() {
 
   // ---------- lower wings with scallop-shell awnings ----------
   const fanMat = new THREE.MeshBasicMaterial({ map: T.fan, side: THREE.DoubleSide });
+  const wingWinMat = decalMat(T.wingWindows);
   for (const s of [-1, 1]) {
     boxB(15, 4.4, 10, M.white, s * 18.5, 0, -4);
-    plane(15, 2.4, texMat(T.wingWindows), s * 18.5, 2.0, 1.02);
+    plane(15, 2.4, wingWinMat, s * 18.5, 2.0, 1.04);
     boxB(15.3, 0.35, 10.3, M.trim, s * 18.5, 4.4, -4);
-    plane(15, 0.4, keyBand, s * 18.5, 4.1, 1.04);
+    plane(15, 0.4, keyBand, s * 18.5, 4.1, 1.06);
     for (const fx of [13.5, 17.5, 21.5, 25.5]) {
       add(new THREE.CircleGeometry(1.9, 12, 0, Math.PI), fanMat, s * fx, 4.75, 0.6);
       add(new THREE.TorusGeometry(1.9, 0.1, 4, 12, Math.PI), M.trim, s * fx, 4.75, 0.62);
