@@ -5,6 +5,11 @@ Akad 12.30 WIB · Resepsi 16.00 WIB.
 
 Plain HTML/CSS/JS, no build step. See [PLAN.md](PLAN.md) for design decisions.
 
+**Live site:** https://adamvirtualspace-lab.github.io/adamelsaweddingsite/ (GitHub Pages, deployed from `main`)
+
+- With a guest's name: https://adamvirtualspace-lab.github.io/adamelsaweddingsite/?to=Nama+Tamu
+- Without the 3D opener (2D cover instead): https://adamvirtualspace-lab.github.io/adamelsaweddingsite/?to=Nama+Tamu&simple
+
 The opening screen is a low-poly 3D model of the Golden Boutique Hotel ([gate3d.js](gate3d.js), Three.js loaded from jsDelivr). The opening text (names, guest, "Buka Undangan") sits at the top of the screen with the hotel below it.
 
 - **Arrival:** the camera eases in from the left at eye level and keeps strolling slowly toward the hotel. It sways with the mouse (desktop) or the phone's tilt (gyro; iOS asks for permission on the first tap).
