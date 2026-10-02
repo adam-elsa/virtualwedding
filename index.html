@@ -17,20 +17,13 @@
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Serif+Display:ital@0;1&family=Great+Vibes&family=Amiri:wght@400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- 3D opener: Cormorant, Great Vibes, Jost, Amiri. Invitation page (template-11): DM Serif Display, Playfair Display, Caudex,
+     Caveat, Exo 2, Montserrat, Open Sans; Urbanist / Allison / Quicksand stand in for the template's paid Batusa / Brighton Signature / Monday -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Serif+Display:ital@0;1&family=Great+Vibes&family=Amiri:wght@400&family=Jost:wght@300;400;500;600&family=Playfair+Display:wght@400;500&family=Caudex:wght@400;700&family=Caveat&family=Exo+2:wght@400;500&family=Montserrat:wght@400;500&family=Open+Sans:wght@400;600&family=Urbanist:wght@300;400;500&family=Allison&family=Quicksand:wght@400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="invite.css">
 </head>
 <body>
-
-<!-- floating parallax decorations (shared, positioned via CSS per-section) -->
-<div class="fx-layer" aria-hidden="true">
-  <span class="fx fx-leaf" data-speed="0.15" style="--x:8%; --y:8%;">🌿</span>
-  <span class="fx fx-leaf" data-speed="0.35" style="--x:88%; --y:14%;">🌿</span>
-  <span class="fx fx-spark" data-speed="0.25" style="--x:20%; --y:40%;"></span>
-  <span class="fx fx-spark" data-speed="0.4" style="--x:75%; --y:55%;"></span>
-  <span class="fx fx-leaf" data-speed="0.2" style="--x:12%; --y:70%;">🌿</span>
-  <span class="fx fx-spark" data-speed="0.3" style="--x:85%; --y:82%;"></span>
-</div>
 
 <!-- ============ GATE / COVER ============ -->
 <section id="gate" class="gate">
@@ -71,225 +64,297 @@
   </div>
 </section>
 
-<!-- music control, hidden until opened -->
-<button id="musicToggle" class="music-toggle" type="button" aria-label="Toggle music" hidden>
-  <span class="music-icon playing">♪</span>
-</button>
-<!-- track picked in script.js: guitar on phones/tablets, orchestra on computers -->
-<audio id="bgm" loop preload="none"></audio>
+<!-- ============ 2D COVER (only with ?simple; the 3D opener above is the cover otherwise) ============ -->
+<section id="welcomeGate" class="welcome-gate" hidden>
+  <div class="wg-top">
+    <h5 class="wg-dear">Dear, <span data-guest-dear></span></h5>
+    <h2 class="wg-invited">You Are Invited!</h2>
+  </div>
+  <div class="wg-bottom">
+    <p class="wg-celebration">The Wedding Celebration of</p>
+    <h1 class="wg-names">Adam &amp; Elsa</h1>
+    <button id="welcomeOpen" class="wg-btn" type="button">
+      <svg class="wg-btn-icon" viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M494.586 164.516c-4.697-3.883-111.723-89.95-135.251-108.657C337.231 38.191 299.437 0 256 0c-43.205 0-80.636 37.717-103.335 55.859-24.463 19.45-131.07 105.195-135.15 108.549A48.004 48.004 0 0 0 0 201.485V464c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V201.509a48 48 0 0 0-17.414-36.993zM464 458a6 6 0 0 1-6 6H54a6 6 0 0 1-6-6V204.347c0-1.813.816-3.526 2.226-4.665 15.87-12.814 108.793-87.554 132.364-106.293C200.755 78.88 232.398 48 256 48c23.693 0 55.857 31.369 73.41 45.389 23.573 18.741 116.503 93.493 132.366 106.316a5.99 5.99 0 0 1 2.224 4.663V458zm-31.991-187.704c4.249 5.159 3.465 12.795-1.745 16.981-28.975 23.283-59.274 47.597-70.929 56.863C336.636 362.283 299.205 400 256 400c-43.452 0-81.287-38.237-103.335-55.86-11.279-8.967-41.744-33.413-70.927-56.865-5.21-4.187-5.993-11.822-1.745-16.981l15.258-18.528c4.178-5.073 11.657-5.843 16.779-1.726 28.618 23.001 58.566 47.035 70.56 56.571C200.143 320.631 232.307 352 256 352c23.602 0 55.246-30.88 73.41-45.389 11.994-9.535 41.944-33.57 70.563-56.568 5.122-4.116 12.601-3.346 16.778 1.727l15.258 18.526z"/></svg>
+      Open Invitation
+    </button>
+  </div>
+</section>
 
+<!-- music control: spinning disc, hidden until opened -->
+<button id="musicToggle" class="music-toggle" type="button" aria-label="Putar / jeda musik" hidden>
+  <span class="music-icon playing"></span>
+</button>
+<!-- "Tenderness in the Air" (Final Fantasy V), classical guitar, as on the original invitation -->
+<audio id="bgm" src="assets/audio/backsound.mp3" loop preload="none"></audio>
+
+<!-- ================================================================
+     INVITATION PAGE — a reproduction of inv.nstory.id/adam-elsa
+     (template-11). Phones: one column. Computers (1080px+): a fixed
+     photo panel on the left and the invitation in a 500px column.
+     ================================================================ -->
 <main id="siteMain" class="site-main" hidden>
 
-  <!-- ============ HERO / BANNER ============ -->
-  <section class="hero">
-    <div class="parallax-bg" data-parallax style="background-image:url('assets/img/01_Banner.jpg')"></div>
-    <div class="hero-overlay"></div>
-    <!-- the invited guest, pinned to the top of the photo (name from ?to=) -->
-    <div class="hero-guest reveal">
-      <p class="hero-guest-to">Kepada Yth. Bapak/Ibu/Saudara/i</p>
-      <p class="hero-guest-name" data-guest>Tamu Undangan</p>
-      <p class="hero-guest-at">di tempat</p>
+  <!-- desktop-only photo panel -->
+  <aside class="inv-side" aria-hidden="true">
+    <div class="inv-side-inner">
+      <svg class="inv-side-chevron" viewBox="0 0 320 512"><path fill="currentColor" d="M143 256.3L7 120.3c-9.4-9.4-9.4-24.6 0-33.9l22.6-22.6c9.4-9.4 24.6-9.4 33.9 0l96.4 96.4 96.4-96.4c9.4-9.4 24.6-9.4 33.9 0L313 86.3c9.4 9.4 9.4 24.6 0 33.9l-136 136c-9.4 9.5-24.6 9.5-34 .1zm34 192l136-136c9.4-9.4 9.4-24.6 0-33.9l-22.6-22.6c-9.4-9.4-24.6-9.4-33.9 0L160 352.1l-96.4-96.4c-9.4-9.4-24.6-9.4-33.9 0L7 278.3c-9.4 9.4-9.4 24.6 0 33.9l136 136c9.4 9.5 24.6 9.5 34 .1z"/></svg>
+      <p class="inv-side-scroll">Scroll Kebawah</p>
+      <p class="inv-side-title">The Wedding of <span>Adam &amp; Elsa</span></p>
     </div>
-    <div class="hero-content reveal">
-      <p class="eyebrow">Kami mengundang anda<br>di Pernikahan</p>
-      <h2 class="hero-names">Adam <span class="amp">&amp;</span> Elsa</h2>
-      <p class="hero-date">24 Oktober 2026</p>
-      <div class="scroll-cue" aria-hidden="true">
-        <span></span>
-        <small>Scroll</small>
-      </div>
-    </div>
-  </section>
+  </aside>
 
-  <!-- ============ OPENING QUOTE ============ -->
-  <section class="section quote-section">
-    <div class="container narrow reveal">
-      <div class="card-soft quote-card">
-        <span class="ornament">❧</span>
-        <p class="quote-arabic" lang="ar" dir="rtl">وَمِنْ كُلِّ شَيْءٍ خَلَقْنَا زَوْجَيْنِ لَعَلَّكُمْ تَذَكَّرُوْنَ ﴿٤٩﴾</p>
-        <p class="quote-text">
-          “Dan segala sesuatu Kami ciptakan berpasang-pasangan agar kamu mengingat (kebesaran Allah).”
-        </p>
-        <p class="quote-source">QS. Az-Zariyat: 49</p>
-      </div>
-    </div>
-  </section>
+  <div class="inv-col">
 
-  <!-- ============ THE COUPLE ============ -->
-  <section class="section couple-section">
-    <div class="container reveal">
-      <p class="eyebrow center">Mempelai</p>
-      <h2 class="section-title center">Kedua Mempelai</h2>
-      <div class="couple-grid">
-        <article class="couple-card card-soft">
-          <div class="couple-photo"><img src="assets/img/02_ProfileAdam.jpg" alt="Adam" loading="lazy"></div>
-          <h3 class="couple-name">Adam</h3>
-          <p class="couple-parents">Putra dari<br><span>Bapak Badru Kamal &amp; Ibu Ika Kurniaputri</span></p>
-        </article>
-        <div class="couple-amp" aria-hidden="true">&amp;</div>
-        <article class="couple-card card-soft">
-          <div class="couple-photo"><img src="assets/img/02_ProfileElsa.jpg" alt="Elsa" loading="lazy"></div>
-          <h3 class="couple-name">Elsa</h3>
-          <p class="couple-parents">Putri dari<br><span>Bapak Muhammad Hasan &amp; Ibu Damini</span></p>
-        </article>
+    <!-- ============ HERO ============ -->
+    <section class="inv-sec inv-hero">
+      <div class="inv-row">
+        <p class="inv-hero-of anim-up">The Wedding of</p>
+        <p class="inv-hero-names anim-up">Adam &amp; Elsa</p>
+        <p class="inv-hero-date anim-up">24 Oktober 2026</p>
       </div>
-    </div>
-  </section>
+      <div class="inv-divider-bottom"></div>
+    </section>
 
-  <!-- ============ OUR STORY ============ -->
-  <section class="section story-section">
-    <div class="container reveal">
-      <p class="eyebrow center">Perjalanan Kami</p>
-      <h2 class="section-title center">Our Story</h2>
-      <div class="story-grid">
-        <figure class="story-photo reveal">
-          <img src="assets/img/04_Venue.jpg" alt="Adam & Elsa" loading="lazy">
-        </figure>
-        <figure class="story-photo reveal">
-          <img src="assets/img/06_FooterThankyou.jpg" alt="Adam & Elsa" loading="lazy">
-        </figure>
-      </div>
-      <p class="story-text reveal">
-        Perjalanan kami tidak singkat.
-        Ada tawa, ada tangis, ada jarak, ada rindu.
-        Di setiap musimnya, kami selalu memilih satu sama lain.
-        Hari ini, kami memilih untuk selamanya.
-        Dan kami ingin merayakannya bersama kalian.
-      </p>
-    </div>
-  </section>
-
-  <!-- ============ SAVE THE DATE / COUNTDOWN ============ -->
-  <section class="section date-section">
-    <div class="parallax-bg" data-parallax style="background-image:url('assets/img/05_TimingAkadResepsi.jpg')"></div>
-    <div class="date-overlay"></div>
-    <div class="container reveal">
-      <p class="eyebrow center">Save The Date</p>
-      <h2 class="big-date">24<span class="big-date-sep">·</span>10<span class="big-date-sep">·</span>2026</h2>
-      <div id="countdown" class="countdown">
-        <div class="cd-item"><span id="cd-days">00</span><small>Hari</small></div>
-        <div class="cd-item"><span id="cd-hours">00</span><small>Jam</small></div>
-        <div class="cd-item"><span id="cd-mins">00</span><small>Menit</small></div>
-        <div class="cd-item"><span id="cd-secs">00</span><small>Detik</small></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ AKAD & RESEPSI ============ -->
-  <section class="section events-section">
-    <div class="container reveal">
-      <p class="eyebrow center">Rangkaian Acara</p>
-      <h2 class="section-title center">Akad &amp; Resepsi</h2>
-      <div class="events-grid">
-        <article class="event-card reveal">
-          <span class="event-icon">💍</span>
-          <h3>Akad Nikah</h3>
-          <p class="event-day">Sabtu, 24 Oktober 2026</p>
-          <p class="event-time">12.30 WIB</p>
-          <p class="event-venue">Golden Boutique Hotel<br>Jakarta</p>
-          <a class="btn-outline" href="https://www.google.com/maps/search/?api=1&query=Golden+Boutique+Hotel+Jakarta" target="_blank" rel="noopener">Lihat Lokasi</a>
-        </article>
-        <article class="event-card reveal">
-          <span class="event-icon">🥂</span>
-          <h3>Resepsi</h3>
-          <p class="event-day">Sabtu, 24 Oktober 2026</p>
-          <p class="event-time">16.00 WIB</p>
-          <p class="event-venue">Golden Boutique Hotel<br>Jakarta</p>
-          <a class="btn-outline" href="https://www.google.com/maps/search/?api=1&query=Golden+Boutique+Hotel+Jakarta" target="_blank" rel="noopener">Lihat Lokasi</a>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ RSVP ============ -->
-  <section class="section rsvp-section">
-    <div class="container narrow reveal">
-      <p class="eyebrow center">RSVP</p>
-      <h2 class="section-title center">Konfirmasi Kehadiran</h2>
-      <p class="section-sub center">Kami dengan senang hati mengundang Bapak/Ibu/Saudara/i. Mohon konfirmasi kehadiran melalui form berikut.</p>
-      <form id="rsvpForm" class="rsvp-form">
-        <div class="field">
-          <label for="rsvpName">Nama</label>
-          <input type="text" id="rsvpName" name="name" required autocomplete="name">
+    <!-- ============ VERSE + PHOTO ============ -->
+    <section class="inv-sec inv-verse">
+      <div class="inv-row inv-verse-card">
+        <div class="inv-verse-text anim-up">
+          <p>“Dan segala sesuatu Kami ciptakan berpasang-pasangan agar kamu mengingat (kebesaran Allah).”</p>
+          <p><strong>(QS. Az-Zariyat: 49)</strong></p>
         </div>
-        <div class="field">
-          <label for="rsvpAttend">Kehadiran</label>
-          <select id="rsvpAttend" name="attendance" required>
-            <option value="">Pilih...</option>
-            <option value="Hadir">Saya akan hadir</option>
-            <option value="Tidak Hadir">Maaf, tidak bisa hadir</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="rsvpGuests">Jumlah Tamu</label>
-          <input type="number" id="rsvpGuests" name="guests" min="1" max="10" value="1">
-        </div>
-        <div class="field">
-          <label for="rsvpMessage">Doa &amp; Ucapan</label>
-          <textarea id="rsvpMessage" name="message" rows="3" placeholder="Tuliskan doa dan ucapan untuk kami..."></textarea>
-        </div>
-        <button type="submit" class="btn-solid">Kirim</button>
-        <p id="rsvpStatus" class="rsvp-status" role="status"></p>
-      </form>
-    </div>
-  </section>
+      </div>
+      <div class="inv-row inv-verse-photo-row">
+        <img class="inv-verse-photo anim-zoom" src="assets/img/inv/venue.jpg" alt="Adam &amp; Elsa" width="800" height="1200">
+      </div>
+      <img class="inv-sprig inv-sprig-verse" src="assets/img/inv/sprig-bouquet.webp" alt="" width="319" height="479" aria-hidden="true">
+    </section>
 
-  <!-- ============ DIGITAL GIFT ============ -->
-  <section class="section gift-section">
-    <div class="container narrow reveal">
-      <p class="eyebrow center">Amplop Digital</p>
-      <h2 class="section-title center">Hadiah Pernikahan</h2>
-      <p class="section-sub center">
-        Doa restu Bapak/Ibu/Saudara/i adalah hadiah terindah bagi kami.
-        Namun jika ingin memberi tanda kasih, dapat melalui:
-      </p>
-      <div class="gift-card card-soft">
-        <p class="gift-bank">BCA</p>
-        <p class="gift-number" id="giftNumber">8691241238</p>
-        <p class="gift-holder">a.n. Elsa</p>
-        <button class="btn-outline" id="copyGift" type="button">Salin Nomor Rekening</button>
+    <!-- ============ OUR STORY ============ -->
+    <section class="inv-sec inv-story">
+      <div class="inv-row">
+        <div class="inv-double-rule anim-left"></div>
+        <p class="inv-story-text anim-up">Perjalanan kami tidak singkat. <br>Ada tawa, ada tangis, ada jarak, ada rindu. Di setiap musimnya, kami selalu memilih satu sama lain. <br>Hari ini, kami memilih untuk selamanya. Dan kami ingin merayakannya bersama kalian.</p>
+      </div>
+    </section>
+
+    <section class="inv-sec inv-photo-band inv-photo-sofa anim-fade">
+      <div class="inv-divider-bottom inv-divider-44"></div>
+    </section>
+
+    <!-- ============ THE COUPLE ============ -->
+    <section class="inv-sec inv-couple">
+      <div class="inv-row inv-couple-card">
+        <div class="inv-couple-col inv-couple-photo-col">
+          <img class="inv-couple-photo anim-zoom" src="assets/img/inv/profile-adam.jpg" alt="Adam" width="900" height="1200" loading="lazy">
+        </div>
+        <div class="inv-couple-col inv-couple-text-col">
+          <img class="inv-sprig inv-sprig-left" src="assets/img/inv/sprig-left.webp" alt="" width="121" height="390" aria-hidden="true">
+          <div class="inv-couple-text anim-up">
+            <h4 class="inv-couple-name">Adam</h4>
+            <p>Putra dari<br>Bapak Badru Kamal<br>&amp; Ibu Ika Kurniaputri</p>
+          </div>
+          <a class="inv-ig anim-up" href="https://instagram.com/adamtechtips" target="_blank" rel="noopener" aria-label="Instagram Adam">
+            <svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+          </a>
+        </div>
+      </div>
+      <div class="inv-row inv-couple-amp-row">
+        <p class="inv-couple-amp anim-up">&amp;</p>
+      </div>
+      <div class="inv-row inv-couple-card">
+        <div class="inv-couple-col inv-couple-photo-col">
+          <img class="inv-couple-photo anim-zoom" src="assets/img/inv/profile-elsa.jpg" alt="Elsa" width="900" height="1200" loading="lazy">
+        </div>
+        <div class="inv-couple-col inv-couple-text-col">
+          <img class="inv-sprig inv-sprig-right" src="assets/img/inv/sprig-right.webp" alt="" width="87" height="407" aria-hidden="true">
+          <div class="inv-couple-text anim-up">
+            <h4 class="inv-couple-name">Elsa</h4>
+            <p>Putri dari<br>Bapak Lim Han San<br>&amp; Ibu Damini</p>
+          </div>
+          <a class="inv-ig anim-up" href="https://instagram.com/scar.let" target="_blank" rel="noopener" aria-label="Instagram Elsa">
+            <svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ AKAD & RESEPSI ============ -->
+    <section class="inv-sec inv-events">
+      <div class="inv-divider-top"></div>
+      <div class="inv-row inv-events-date">
+        <p class="anim-up">Sabtu, 24 Oktober 2026</p>
+      </div>
+      <div class="inv-row inv-events-body">
+        <svg class="inv-line-icon anim-draw" viewBox="0 0 841.9 841.9" aria-hidden="true"><g fill="none" stroke="#000" stroke-width="8"><path d="M332.1,38.6c-0.4-0.2-1-0.5-1.3-0.7c-18-11.2-39.3-14.5-59.9-9.6c-1.5,0.4-3.1,1-4.5,1.5c-18.3,5.5-33.9,17-44.3,33.7c-8.2,13.3-12.2,28.2-12,43.4c0.2,5.7,0.8,11.5,2,17.1c5,20.5,17.6,38.1,35.7,49.2c10,6.1,20.8,9.9,31.9,11.1c0.5,0.2,1.2,0.1,1.7,0.2c2.1,0.2,4.5,0,6.7-0.7c10.2-3,16.1-13.6,13.2-23.9c-2.2-7.7-8.7-12.9-15.9-13.9c-0.3-0.1-0.5,0-0.6,0c-16.6-1.9-31-14-35.1-31.1c-1.6-6.8-1.3-13.4,0.3-19.7c3.4-13.2,13.4-24.2,27.2-28.7l2.8-0.8c11.1-2.7,22.3-0.5,31.4,5.2c4.6,3,10,3.7,15.4,2.1c11-3.2,16-14.6,13.2-24.2C338.6,45,336.1,41.3,332.1,38.6z"/><path d="M625.3,38.6c-0.4-0.2-1-0.5-1.3-0.7c-18-11.2-39.3-14.5-59.9-9.6c-1.5,0.4-3.1,1-4.5,1.5c-18.3,5.5-33.9,17-44.3,33.7c-8.2,13.3-12.2,28.2-12,43.4c0.2,5.7,0.8,11.5,2,17.1c5,20.5,17.6,38.1,35.7,49.2c10,6.1,20.8,9.9,31.9,11.1c0.5,0.2,1.2,0.1,1.7,0.2c2.1,0.2,4.5,0,6.7-0.7c10.2-3,16.1-13.6,13.2-23.9c-2.2-7.7-8.7-12.9-15.9-13.9c-0.3-0.1-0.5,0-0.6,0c-16.6-1.9-31-14-35.1-31.1c-1.6-6.8-1.3-13.4,0.3-19.7c3.4-13.2,13.4-24.2,27.2-28.7l2.8-0.8c11.1-2.7,22.3-0.5,31.4,5.2c4.6,3,10,3.7,15.4,2.1c11-3.2,16-14.6,13.2-24.2C631.8,45,629.3,41.3,625.3,38.6z"/><path d="M579.3,111h76.8c9.6,0,17.4,7.8,17.4,17.4v576.1c0,9.6-7.8,17.4-17.4,17.4H77.3c-9.6,0-17.4-7.8-17.4-17.4V128.4c0-9.6,7.8-17.4,17.4-17.4h106.6"/><line x1="288.6" y1="111" x2="475.5" y2="111"/><path d="M657.7,111.1L657.7,111.1l0.3,0c9.7-0.9,18,6.2,18.9,15.9l48.9,574c0.8,9.7-6.3,18-15.9,18.9l-538.3,45.9l-38.3,3.2c-9.7,0.8-18.1-6.3-18.9-15.9l-2.7-31.2"/><path d="M171.7,765.8l6.5,35.6c1.7,9.6,10.8,15.8,20.3,14.1l569.2-104.7c9.4-1.7,15.8-10.8,14-20.3L677.6,123.9c-1.7-9.4-10.8-15.7-20.3-14l-5.8,1.1l0-0.1"/><line x1="59.9" y1="238" x2="489.3" y2="238"/><line x1="586" y1="238" x2="673.5" y2="238"/><path d="M364.5,641.2l148.9-140.9l-1.8,0c17.7-18.9,28.7-44.1,28.7-72c0-58.3-47.3-105.6-105.6-105.6c-26,0-49.5,9.7-67.9,25.3c-18.4-15.6-41.9-25.3-67.9-25.3c-58.3,0-105.6,47.3-105.6,105.6c0,24.2,8.5,46.3,22.2,64.1l0,0L364.5,641.2"/></g></svg>
+        <p class="inv-event-name anim-up">Akad Nikah</p>
+        <p class="inv-event-time anim-up">12.30 WIB</p>
+        <p class="inv-event-name anim-up">Resepsi Pernikahan</p>
+        <p class="inv-event-time anim-up">16.00 WIB</p>
+        <svg class="inv-line-icon inv-line-icon-pin anim-draw" viewBox="0 0 841.9 841.9" aria-hidden="true"><g fill="none" stroke="#000" stroke-width="8"><path d="M607.2,259.9c0,95.7-163.3,316-186.3,346.4C398,575.9,234.7,355.6,234.7,259.9c0-102.7,83.6-186.3,186.3-186.3C523.7,73.6,607.2,157.2,607.2,259.9z M515.9,259.9c0,52.4-42.6,95-94.9,95c-52.4,0-95-42.6-95-95c0-52.4,42.6-95,95-95C473.3,164.9,515.9,207.5,515.9,259.9z"/><path d="M474.7,714.6c0,29.6-24.1,53.7-53.7,53.7c-29.6,0-53.7-24.1-53.7-53.7c0-29.6,24.1-53.7,53.7-53.7C450.6,660.8,474.7,684.9,474.7,714.6z"/></g></svg>
+        <div class="inv-venue anim-up">
+          <h3>Golden Boutique Hotel Kemayoran</h3>
+          <p>Jl. Angkasa No.1, RT.7/RW.5, <br>Gn. Sahari Utara, <br>Kec. Sawah Besar, Kota Jakarta Pusat, <br>Daerah Khusus Ibukota Jakarta 10720</p>
+        </div>
+        <a class="inv-btn inv-btn-map anim-up" href="https://maps.app.goo.gl/CVXyH9ZxdrndSdp88" target="_blank" rel="noopener">
+          <svg viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67-9.535 13.774-29.93 13.773-39.464 0zM192 272c44.183 0 80-35.817 80-80s-35.817-80-80-80-80 35.817-80 80 35.817 80 80 80z"/></svg>
+          Lihat Lokasi
+        </a>
+      </div>
+      <div class="inv-divider-bottom"></div>
+    </section>
+
+    <!-- ============ COUNTDOWN ============ -->
+    <section class="inv-sec inv-countdown">
+      <div class="inv-row">
+        <p class="inv-countdown-title anim-up">Hari yang ditunggu</p>
+        <div class="inv-clock anim-up" id="countdown">
+          <div class="inv-face"><div class="inv-time" id="cd-days">0</div><div class="inv-label">Day</div></div>
+          <div class="inv-face"><div class="inv-time" id="cd-hours">00</div><div class="inv-label">Hours</div></div>
+          <div class="inv-face"><div class="inv-time" id="cd-mins">00</div><div class="inv-label">Min</div></div>
+          <div class="inv-face"><div class="inv-time" id="cd-secs">00</div><div class="inv-label">Secs</div></div>
+        </div>
+      </div>
+      <img class="inv-sprig inv-sprig-countdown" src="assets/img/inv/sprig-bouquet.webp" alt="" width="319" height="479" aria-hidden="true" loading="lazy">
+    </section>
+
+    <section class="inv-sec inv-quote">
+      <div class="inv-row">
+        <div class="inv-double-rule anim-left"></div>
+        <p class="inv-quote-text anim-up">“Being deeply loved by someone gives you strength. While loving someone deeply gives you courage.”</p>
+      </div>
+    </section>
+
+    <section class="inv-sec inv-photo-band inv-photo-arch anim-fade">
+      <div class="inv-divider-bottom inv-divider-44"></div>
+    </section>
+
+    <!-- ============ RSVP ============ -->
+    <section class="inv-sec inv-rsvp">
+      <div class="inv-row">
+        <p class="inv-title-25 anim-up">RSVP</p>
+        <p class="inv-rsvp-intro anim-up">Kami tidak sabar menunggu hari pernikahan kami bersama Bapak/Ibu/Saudara/i, mohon konfirmasi kehadiran Bapak/Ibu/Saudara/i. Terima kasih.</p>
+        <form id="rsvpForm" class="inv-rsvp-form anim-up" novalidate>
+          <div class="ff-group">
+            <label for="rsvpName">Nama</label>
+            <input type="text" id="rsvpName" name="name" required autocomplete="name">
+          </div>
+          <div class="ff-group">
+            <span class="ff-label" id="rsvpAttendLabel">Kehadiran?</span>
+            <div class="ff-buttons" role="radiogroup" aria-labelledby="rsvpAttendLabel">
+              <label class="ff-choice"><input type="radio" name="attendance" value="Hadir" checked><span>Saya akan hadir</span></label>
+              <label class="ff-choice"><input type="radio" name="attendance" value="Tidak Hadir"><span>Maaf tidak hadir</span></label>
+            </div>
+          </div>
+          <div class="ff-group ff-guests">
+            <label for="rsvpGuests">Jumlah Tamu</label>
+            <select id="rsvpGuests" name="guests">
+              <option value="1">1</option>
+              <option value="2">2</option>
+            </select>
+          </div>
+          <div class="ff-submit">
+            <button type="submit" class="ff-btn">Kirim</button>
+          </div>
+          <p class="rsvp-status" role="status"></p>
+        </form>
+      </div>
+      <img class="inv-sprig inv-sprig-rsvp" src="assets/img/inv/sprig-bouquet.webp" alt="" width="319" height="479" aria-hidden="true" loading="lazy">
+    </section>
+
+    <!-- ============ AMPLOP DIGITAL ============ -->
+    <section class="inv-sec inv-gift">
+      <div class="inv-row">
+        <svg class="inv-gift-icon anim-up" viewBox="2 3 28 27" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="10" width="26" height="6"/><path d="M5 16v13h22V16M16 10v19"/><path d="M16 10c-1.5-4-7-6.5-8.5-3.5S12 10 16 10zM16 10c1.5-4 7-6.5 8.5-3.5S20 10 16 10z"/></g></svg>
+        <p class="inv-gift-title anim-up">Amplop Digital</p>
+        <p class="inv-gift-text anim-up">Bagi keluarga dan sahabat yang ingin mengirimkan hadiah, silakan mengirimkannya melalui tautan berikut:</p>
+        <button class="inv-btn inv-btn-bank anim-up" id="openGift" type="button" aria-haspopup="dialog" aria-controls="giftPopup">
+          <svg viewBox="0 0 576 512" aria-hidden="true"><path fill="currentColor" d="M0 432c0 26.5 21.5 48 48 48h480c26.5 0 48-21.5 48-48V256H0v176zm192-68c0-6.6 5.4-12 12-12h136c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12H204c-6.6 0-12-5.4-12-12v-40zm-128 0c0-6.6 5.4-12 12-12h72c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12H76c-6.6 0-12-5.4-12-12v-40zM576 80v48H0V80c0-26.5 21.5-48 48-48h480c26.5 0 48 21.5 48 48z"/></svg>
+          Transfer Bank
+        </button>
+      </div>
+      <img class="inv-sprig inv-sprig-gift" src="assets/img/inv/sprig-bouquet.webp" alt="" width="319" height="479" aria-hidden="true" loading="lazy">
+    </section>
+
+    <!-- ============ GALLERY ============ -->
+    <section class="inv-sec inv-gallery">
+      <div class="inv-row">
+        <p class="inv-gallery-kicker anim-up">GALERI</p>
+        <p class="inv-gallery-title anim-up">Momen Kami</p>
+      </div>
+      <div class="inv-row inv-gallery-grid">
+        <div class="inv-gallery-col">
+          <a href="assets/img/inv/gallery-black.jpg" class="inv-gallery-item anim-zoom"><img src="assets/img/inv/gallery-black.jpg" alt="Adam &amp; Elsa" width="1200" height="800" loading="lazy"></a>
+          <a href="assets/img/inv/gallery-curtains.jpg" class="inv-gallery-item anim-zoom"><img src="assets/img/inv/gallery-curtains.jpg" alt="Adam &amp; Elsa" width="1200" height="800" loading="lazy"></a>
+          <a href="assets/img/inv/gallery-garden.jpg" class="inv-gallery-item anim-zoom"><img src="assets/img/inv/gallery-garden.jpg" alt="Adam &amp; Elsa" width="1200" height="800" loading="lazy"></a>
+          <a href="assets/img/inv/venue.jpg" class="inv-gallery-item anim-zoom"><img src="assets/img/inv/venue.jpg" alt="Adam &amp; Elsa" width="800" height="1200" loading="lazy"></a>
+        </div>
+        <div class="inv-gallery-col">
+          <a href="assets/img/inv/arch-window.jpg" class="inv-gallery-item anim-zoom"><img src="assets/img/inv/arch-window.jpg" alt="Adam &amp; Elsa" width="800" height="1200" loading="lazy"></a>
+          <a href="assets/img/inv/side-panel.jpg" class="inv-gallery-item anim-zoom"><img src="assets/img/inv/side-panel.jpg" alt="Adam &amp; Elsa" width="1200" height="800" loading="lazy"></a>
+          <a href="assets/img/inv/gallery-sitting.jpg" class="inv-gallery-item anim-zoom"><img src="assets/img/inv/gallery-sitting.jpg" alt="Adam &amp; Elsa" width="1200" height="800" loading="lazy"></a>
+          <a href="assets/img/inv/gallery-willow.jpg" class="inv-gallery-item anim-zoom"><img src="assets/img/inv/gallery-willow.jpg" alt="Adam &amp; Elsa" width="1200" height="800" loading="lazy"></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ GUESTBOOK ============ -->
+    <section class="inv-sec inv-wishes">
+      <div class="inv-row inv-wishes-card">
+        <p class="inv-wishes-title anim-up">Tinggalkan pesan/doa untuk kami <img src="assets/img/inv/envelope.svg" width="32" height="29" alt=""></p>
+        <div class="inv-wishes-body">
+          <form id="wishForm" class="inv-wish-form">
+            <input type="text" name="name" placeholder="Nama" required autocomplete="name" aria-label="Nama">
+            <textarea name="message" placeholder="Tulis pesan" required minlength="2" maxlength="500" aria-label="Tulis pesan"></textarea>
+            <div class="inv-wish-submit"><button type="submit">Kirim</button></div>
+            <p class="rsvp-status" role="status"></p>
+          </form>
+          <ul id="wishesList" class="inv-wishes-list"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ THANK YOU ============ -->
+    <section class="inv-sec inv-thanks">
+      <div class="inv-row">
+        <p class="inv-thanks-line anim-up">Two souls become one, two hearts beat as one</p>
+        <p class="inv-thanks-names anim-up">Adam &amp; Elsa</p>
+        <p class="inv-thanks-ty anim-up">Thank you</p>
+      </div>
+    </section>
+
+    <footer class="inv-sec inv-credits">
+      <div class="inv-row">
+        <p class="inv-credits-made anim-up">Made with ♥ by</p>
+        <p class="inv-credits-names">Adam &amp; Elsa</p>
+        <p class="inv-credits-song">Backsound by : <em>FINAL FANTASY V Tenderness in the Air Classical Guitar Solo w Tabs</em></p>
+        <p class="inv-credits-rights">© 2026 Adam &amp; Elsa.</p>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ============ BANK TRANSFER POPUP ============ -->
+  <div id="giftPopup" class="inv-popup" role="dialog" aria-modal="true" aria-labelledby="giftPopupTitle" hidden>
+    <div class="inv-popup-box">
+      <button class="inv-popup-close" type="button" aria-label="Tutup">×</button>
+      <p class="inv-popup-title" id="giftPopupTitle">Nomor Rekening</p>
+      <div class="inv-bank-card">
+        <img class="inv-bank-logo" src="assets/img/inv/bank-bca.png" alt="BCA" width="320" height="100">
+        <p class="inv-bank-number" id="giftNumber">8691241238</p>
+        <button class="inv-copy" id="copyGift" type="button">
+          <svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M320 448v40c0 13.255-10.745 24-24 24H24c-13.255 0-24-10.745-24-24V120c0-13.255 10.745-24 24-24h72v296c0 30.879 25.121 56 56 56h168zm0-344V0H152c-13.255 0-24 10.745-24 24v368c0 13.255 10.745 24 24 24h272c13.255 0 24-10.745 24-24V128H344c-13.2 0-24-10.8-24-24zm120.971-31.029L375.029 7.029A24 24 0 0 0 358.059 0H352v96h96v-6.059a24 24 0 0 0-7.029-16.97z"/></svg>
+          <span>Copy</span>
+        </button>
+        <h5 class="inv-bank-holder">Elsa</h5>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- ============ WISHES / GUESTBOOK ============ -->
-  <section class="section wishes-section">
-    <div class="container narrow reveal">
-      <p class="eyebrow center">Guestbook</p>
-      <h2 class="section-title center">Ucapan &amp; Doa</h2>
-      <div id="wishesList" class="wishes-list">
-        <p class="wishes-empty">Jadilah yang pertama mengirimkan ucapan untuk Adam &amp; Elsa 💛</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ GALLERY ============ -->
-  <section class="section gallery-section">
-    <div class="container reveal">
-      <p class="eyebrow center">Galeri</p>
-      <h2 class="section-title center">Momen Kami</h2>
-      <div class="gallery-grid">
-        <div class="gallery-item"><img src="assets/img/01_Banner.jpg" alt="Adam & Elsa" loading="lazy"></div>
-        <div class="gallery-item"><img src="assets/img/09_Galery_2.jpg" alt="Adam & Elsa" loading="lazy"></div>
-        <div class="gallery-item"><img src="assets/img/09_Galery_1.jpg" alt="Adam & Elsa" loading="lazy"></div>
-        <div class="gallery-item"><img src="assets/img/04_Venue.jpg" alt="Adam & Elsa" loading="lazy"></div>
-        <div class="gallery-item"><img src="assets/img/05_TimingAkadResepsi.jpg" alt="Adam & Elsa" loading="lazy"></div>
-        <div class="gallery-item"><img src="assets/img/06_FooterThankyou.jpg" alt="Adam & Elsa" loading="lazy"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ CLOSING ============ -->
-  <footer class="footer-section">
-    <div class="parallax-bg" data-parallax style="background-image:url('assets/img/06_FooterThankyou.jpg')"></div>
-    <div class="footer-overlay"></div>
-    <div class="container narrow reveal">
-      <span class="ornament">❧</span>
-      <p class="footer-thanks">Terima kasih atas doa dan restu yang diberikan.<br>Kami menantikan kehadiran Bapak/Ibu/Saudara/i.</p>
-      <h2 class="footer-names">Adam <span class="amp">&amp;</span> Elsa</h2>
-      <p class="footer-credit">Made with ♥ · 24 Oktober 2026</p>
-    </div>
-  </footer>
+  <!-- gallery lightbox -->
+  <div id="lightbox" class="inv-lightbox" hidden>
+    <button class="inv-lightbox-close" type="button" aria-label="Tutup">×</button>
+    <img alt="">
+  </div>
 
 </main>
 

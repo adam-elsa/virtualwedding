@@ -23,11 +23,13 @@ function doPost(e) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   const data = JSON.parse(e.postData.contents);
 
+  // RSVP form: name + attendance + guests. Guestbook form: name + message only (no attendance, no guest count).
+  const isRsvp = data.attendance === 'Hadir' || data.attendance === 'Tidak Hadir';
   sheet.appendRow([
     new Date(),
     safeCell(data.name),
-    safeCell(data.attendance),
-    Math.max(1, Math.min(10, parseInt(data.guests, 10) || 1)), // a real number, so the summary can add it up
+    isRsvp ? data.attendance : '',
+    isRsvp ? Math.max(1, Math.min(10, parseInt(data.guests, 10) || 1)) : '', // a real number, so the summary can add it up
     safeCell(data.message),
   ]);
 
@@ -47,6 +49,7 @@ function doGet() {
     .map((row) => ({
       name: row[1],
       message: row[4],
+      time: row[0] instanceof Date ? row[0].toISOString() : '', // for "2 hours, 5 mins ago"
     }));
 
   return ContentService
