@@ -10,6 +10,9 @@
   const NSTORY_AJAX_URL = 'https://inv.nstory.id/wp-admin/admin-ajax.php';
   const NSTORY_FORM_ID = '705';
   const NSTORY_POST_ID = '25279687'; // the adam-elsa page
+  // Guestbook messages also go to the invitation's guestbook (CommentPress = WordPress comments
+  // on that page), where they show publicly with the others. Set to '' to stop.
+  const NSTORY_COMMENTS_URL = 'https://inv.nstory.id/wp-comments-post.php';
   const WEDDING_DATE = new Date('2026-10-24T12:30:00+07:00'); // Akad time, used for countdown
 
   // ---------- guest name from URL ----------
@@ -201,6 +204,30 @@
     });
   }
 
+  // Same fields the invitation's guestbook form posts, including its fixed anti-spam fields
+  // (name=username, nombre and form-saic left empty). Also no-cors: the reply can't be read.
+  async function sendWishToNstory(name, message) {
+    if (!NSTORY_COMMENTS_URL) return;
+    await fetch(NSTORY_COMMENTS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: new URLSearchParams({
+        author: name.replace(/[?%$=\/]/g, '').slice(0, 80), // the guestbook refuses these characters
+        email: 'anonymous@wordpress.com',
+        comment: message,
+        name: 'username',
+        nombre: '',
+        'form-saic': '',
+        submit: 'Kirim',
+        commentpress: 'true',
+        comment_post_ID: NSTORY_POST_ID,
+        comment_parent: '0',
+        comment_press: 'true',
+      }),
+    });
+  }
+
   // ---------- RSVP ----------
   const rsvpForm = document.getElementById('rsvpForm');
   if (guest && !rsvpForm.elements.name.value) rsvpForm.elements.name.value = guest;
@@ -246,14 +273,17 @@
     const status = wishForm.querySelector('.rsvp-status');
     const name = wishForm.elements.name.value.trim();
     const message = wishForm.elements.message.value.trim();
-    if (!name || !message) return;
+    if (!name || message.length < 2) return; // the invitation's guestbook needs 2+ characters
     status.textContent = 'Mengirim...';
     status.className = 'rsvp-status';
     try {
-      const result = await send({ name, attendance: '', guests: '', message });
+      const [toSheet] = await Promise.all([
+        send({ name, attendance: '', guests: '', message }),
+        sendWishToNstory(name, message),
+      ]);
       renderWish(name, message, new Date().toISOString(), true);
       wishForm.elements.message.value = '';
-      status.textContent = result === 'preview' ? 'Terima kasih! (mode pratinjau)' : '';
+      status.textContent = toSheet === 'preview' && !NSTORY_COMMENTS_URL ? 'Terima kasih! (mode pratinjau)' : '';
       status.className = 'rsvp-status ok';
     } catch (err) {
       status.textContent = 'Gagal mengirim. Silakan coba lagi.';

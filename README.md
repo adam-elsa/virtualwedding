@@ -34,11 +34,11 @@ The Claude Code preview (`.claude/launch.json`) serves on port 8811 with `Cache-
 - **Background music**: "Tenderness in the Air" from Final Fantasy V, a classical guitar solo (the same recording as the original NgantenStory invitation), in `assets/audio/backsound.mp3` for every device. It was re-encoded from the invitation's file to 128 kbps MP3 with a short fade in/out for smooth looping: `ffmpeg -i in.mp3 -vn -map_metadata -1 -af "afade=t=in:d=1.5,afade=t=out:st=<duration-3>:d=3" -c:a libmp3lame -b:a 128k out.mp3`.
 - **Opening quote**: QS. Az-Zariyat: 49 (Indonesian translation), in the `.inv-verse` section of `index.html`; the 3D walk shows it with the Arabic too.
 
-## RSVP → our NgantenStory invitation
+## RSVP + guestbook → our NgantenStory invitation
 
 Every RSVP made on this site is also sent to the RSVP form on our NgantenStory invitation (inv.nstory.id/adam-elsa, Fluent Forms form 705), the same way that page's own form sends it: name, "Saya akan hadir" / "Maaf tidak hadir", and "Jumlah Tamu" (1 or 2, only for guests who are coming). So all RSVPs show up together in the NgantenStory entries list. The settings (`NSTORY_AJAX_URL`, `NSTORY_FORM_ID`, `NSTORY_POST_ID`) are at the top of [script.js](script.js); set `NSTORY_AJAX_URL` to `''` to stop.
 
-The browser sends it cross-site, so it can't read NgantenStory's reply. The guest always sees "Terima kasih", even if NgantenStory rejected the entry (for example if nonce checking or spam protection is switched on for the form). After going live, send one test RSVP and check it appears in the NgantenStory dashboard. The guestbook is not sent there.
+The browser sends it cross-site, so it can't read NgantenStory's reply. The guest always sees "Terima kasih", even if NgantenStory rejected the entry (for example if nonce checking or spam protection is switched on for the form). After going live, send one test RSVP and check it appears in the NgantenStory dashboard. Guestbook messages go there too: each one is posted to the invitation's guestbook (CommentPress, i.e. WordPress comments on the adam-elsa page, via `wp-comments-post.php`), so it shows publicly alongside the messages left on the invitation itself. `NSTORY_COMMENTS_URL` at the top of script.js turns this off. Same caveat: the reply can't be read, so leave one test message after going live and check it appears on inv.nstory.id/adam-elsa (WordPress may hold some comments for approval, e.g. ones with several links). Messages left on the invitation don't show on this site's guestbook, because browsers don't let this site read that page.
 
 ## Wiring up RSVP + Guestbook (Google Sheet)
 
