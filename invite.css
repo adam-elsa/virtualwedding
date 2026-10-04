@@ -135,8 +135,15 @@
 .inv-hero{
   height:100vh;height:100svh;
   display:flex;flex-direction:column;justify-content:flex-end;
-  background-image:url('assets/img/inv/banner.jpg');
+  /* the two of us at the arch window; on phones the crop centres on us (52% across) */
+  background-image:url('assets/img/inv/hero.jpg');
+  background-position:52% center;
   color:#ffffff;text-align:center;
+}
+/* the photo is light: a soft dark fade at the bottom keeps the white names readable */
+.inv-hero::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(20,20,20,0) 50%,rgba(20,20,20,0.5) 100%);
 }
 .inv-hero .inv-row{width:80%;padding-bottom:0;}
 .inv-hero .inv-row > *{margin-bottom:10px;}
@@ -417,11 +424,7 @@
   .inv-row{max-width:620px;}
 
   /* hero: our original landscape banner, full screen, with bigger names */
-  .inv-hero{height:100vh;background-image:url('assets/img/01_Banner.jpg');background-position:55% 30%;}
-  .inv-hero::before{
-    content:'';position:absolute;inset:0;
-    background:linear-gradient(180deg,rgba(20,20,20,0) 45%,rgba(20,20,20,0.55) 100%);
-  }
+  .inv-hero{height:100vh;background-position:center 40%;}
   .inv-hero .inv-row{max-width:none;padding-bottom:20px;}
   .inv-hero-of, .inv-hero-date{font-size:18px;letter-spacing:4px;}
   .inv-hero-names{font-size:clamp(56px,6vw,84px);line-height:1em;}
