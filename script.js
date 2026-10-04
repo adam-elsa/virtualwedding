@@ -27,6 +27,25 @@
     document.querySelectorAll('[data-guest], [data-guest-dear]').forEach((el) => { el.textContent = guest; });
   }
 
+  // ---------- guest name on the hero: big, but never wider than the screen ----------
+  // "Dear, <name>" stays on one line; a long name is shrunk until the line fits (down to
+  // 18px), and only past that does it wrap onto a second line.
+  const heroDear = document.querySelector('.inv-hero-dear');
+  const heroName = heroDear && heroDear.querySelector('.inv-hero-guest-name');
+  function fitGuestName() {
+    if (!heroName || !heroDear.clientWidth) return; // not on screen yet
+    heroName.style.fontSize = '';
+    heroDear.classList.remove('is-wrapping');
+    let size = parseFloat(getComputedStyle(heroName).fontSize);
+    for (let i = 0; i < 6 && heroDear.scrollWidth > heroDear.clientWidth + 1 && size > 18; i++) {
+      size = Math.max(18, Math.floor(size * (heroDear.clientWidth / heroDear.scrollWidth) * 0.98));
+      heroName.style.fontSize = size + 'px';
+    }
+    if (heroDear.scrollWidth > heroDear.clientWidth + 1) heroDear.classList.add('is-wrapping');
+  }
+  window.addEventListener('resize', fitGuestName);
+  if (document.fonts) document.fonts.ready.then(fitGuestName);
+
   // ---------- opening ----------
   const gate = document.getElementById('gate');
   const openBtn = document.getElementById('openBtn');
@@ -60,6 +79,7 @@
   function revealSite() {
     gate.classList.add('gate-hidden');
     siteMain.hidden = false;
+    fitGuestName();
     document.body.style.overflow = '';
     window.scrollTo(0, 0);
     setTimeout(() => {
@@ -411,6 +431,7 @@
     // and starts the music.
     gate.remove();
     siteMain.hidden = false;
+    fitGuestName();
     welcomeGate.hidden = false;
     document.body.style.overflow = 'hidden';
     let opened = false;
