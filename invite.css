@@ -2,7 +2,8 @@
    INVITATION PAGE — reproduces inv.nstory.id/adam-elsa (NgantenStory
    template-11, built in Divi). Spacing follows Divi's defaults:
    sections 50px top/bottom, rows 80% wide with 30px top/bottom,
-   30px between modules (phones/tablets); tighter on computers.
+   30px between modules (phones/tablets). Computers get our own
+   full-width layout (see the end of this file).
    Fonts: Urbanist, Allison and Quicksand stand in for the template's
    paid Batusa, Brighton Signature and Monday.
    ================================================================ */
@@ -37,7 +38,7 @@
 .site-main p:last-child{padding-bottom:0;}
 /* Urbanist runs ~4% narrower than Batusa: a hair of tracking keeps the template's line breaks */
 .inv-hero-of, .inv-hero-date, .inv-verse-text, .inv-couple-text, .inv-event-time, .inv-venue p, .inv-btn,
-.inv-time, .inv-label, .inv-gift-text, .inv-gallery-kicker, .inv-thanks-line, .inv-thanks-ty, .inv-side-scroll, .inv-side-title{
+.inv-time, .inv-label, .inv-gift-text, .inv-gallery-kicker, .inv-thanks-line, .inv-thanks-ty{
   letter-spacing:.02em;
 }
 /* each Divi text module is its own block, so a lone paragraph has no bottom padding */
@@ -398,17 +399,69 @@
 .inv-credits-song em{display:block;}
 .inv-credits-rights{font-family:var(--font-body);font-size:9px;}
 
-/* ============ computers ============ */
+/* ============ computers: full width ============
+   The template squeezes the invitation into a 500px column beside a fixed photo panel; we keep
+   our own full-screen layout instead: full-width sections and photos (landscape versions of the
+   same shots where we have them), with the content centred at a readable width. */
 @media (min-width:981px){
-  .site-main, .welcome-gate{--sec-pad:4%;--row-pad:2%;--mod-gap:2.75%;}
-  .welcome-gate{padding:28vh 0;}
-  .inv-hero{height:120vh;}
-  .inv-couple-text{font-size:16px;}
-  /* photo beside the names */
-  .inv-couple-card{display:flex;align-items:flex-start;}
-  .inv-couple-card > .inv-couple-col{width:50%;}
-  .inv-couple .inv-row > *:not(:last-child){margin-bottom:0;}
-  .inv-couple-photo{margin:0 auto;}
+  .site-main, .welcome-gate{--sec-pad:70px;--row-pad:30px;--mod-gap:24px;}
+  .welcome-gate{
+    padding:10vh 0 12vh;
+    background-image:linear-gradient(180deg,rgba(0,4,10,0.36) 60%,#000c0f 100%),url('assets/img/09_Galery_1.jpg');
+    background-position:center 35%;
+  }
+  .wg-top, .wg-bottom{max-width:520px;}
+  .wg-names{font-size:52px;}
+
+  .inv-row{max-width:620px;}
+
+  /* hero: our original landscape banner, full screen, with bigger names */
+  .inv-hero{height:100vh;background-image:url('assets/img/01_Banner.jpg');background-position:55% 30%;}
+  .inv-hero::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(20,20,20,0) 45%,rgba(20,20,20,0.55) 100%);
+  }
+  .inv-hero .inv-row{max-width:none;padding-bottom:20px;}
+  .inv-hero-of, .inv-hero-date{font-size:18px;letter-spacing:4px;}
+  .inv-hero-names{font-size:clamp(56px,6vw,84px);line-height:1em;}
+  .inv-divider-bottom, .inv-divider-top{background-size:100% 60px;height:60px;}
+  .inv-divider-44{background-size:100% 70px;height:70px;}
+
+  .inv-verse-photo{max-width:440px;margin-left:auto;margin-right:auto;}
+
+  /* photo bands: tall, focused on us */
+  .inv-photo-band{padding:0;height:90vh;min-height:560px;}
+  .inv-photo-sofa{background-position:center 58%;}
+  .inv-photo-arch{background-image:linear-gradient(180deg,#ffffff 0%,rgba(255,255,255,0) 30%),url('assets/img/inv/side-panel.jpg');background-position:center 60%;}
+
+  /* the two of us side by side, "&" between */
+  .inv-couple{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:0 40px;max-width:1040px;margin:0 auto;padding-left:40px;padding-right:40px;}
+  .inv-couple .inv-row{width:auto;max-width:none;margin:0;}
+  .inv-couple-amp-row{padding:0;}
+  .inv-couple-text{font-size:15px;}
+
+  .inv-events{background-image:linear-gradient(180deg,rgba(255,255,255,0.81) 0%,rgba(255,255,255,0.8) 100%),url('assets/img/05_TimingAkadResepsi.jpg');background-position:center 40%;}
+  .inv-events .inv-row{max-width:520px;}
+
+  /* sprigs hug the centred content instead of the screen edge */
+  .inv-sprig-verse{right:calc(50% - 310px - 90px);}
+  .inv-sprig-countdown{right:calc(50% - 310px - 150px);}
+  .inv-sprig-rsvp{right:calc(50% - 310px - 110px);}
+  .inv-sprig-gift{left:calc(50% - 310px - 130px);}
+
+  .inv-gallery .inv-gallery-grid{max-width:960px;}
+  .inv-wishes .inv-wishes-card{max-width:680px;}
+
+  .inv-thanks{
+    padding:80px 0 56vh;
+    background-image:linear-gradient(180deg,rgba(0,0,0,0.5) 0%,rgba(0,0,0,0.2) 45%,rgba(0,0,0,0.4) 100%),url('assets/img/inv/gallery-sitting.jpg');
+    background-position:center 8%;
+  }
+  .inv-thanks .inv-row{max-width:1000px;}
+  .inv-thanks-line{font-size:18px;}
+  .inv-thanks-names{font-size:56px;}
+  .inv-thanks-ty{font-size:20px;}
+
   .inv-bank-card{width:75%;}
   .inv-bank-logo{max-width:25%;}
 }
@@ -418,34 +471,9 @@
   .inv-bank-logo{max-width:15%;}
 }
 
-/* the side panel: a fixed photo on the left, the invitation in a 500px column on the right */
-.inv-side{display:none;}
-@media (min-width:1080px){
-  .inv-side{
-    display:block;position:fixed;top:0;left:0;z-index:10;
-    width:calc(100% - 500px);height:100vh;overflow:hidden;
-    background:
-      linear-gradient(90deg,rgba(255,255,255,0) 42%,#000000 100%),
-      url('assets/img/inv/side-panel.jpg') center/cover no-repeat;
-    display:flex;flex-direction:column;justify-content:flex-end;
-    padding:0 0 4%;
-  }
-  .inv-side-inner{text-align:right;padding-right:25px;}
-  .inv-side-chevron{display:block;width:16px;height:25px;margin:0 52px 6px auto;color:#ffffff;animation:side-bounce 2s infinite;}
-  .inv-side-scroll{margin:0 0 30px;padding-right:27px;font-family:var(--font-body);font-size:14px;color:#ffffff;}
-  .inv-side-title{margin:0;font-family:var(--font-body);font-size:30px;line-height:1.7em;color:#ffffff;}
-  .inv-col{width:500px;margin-left:auto;}
-  .welcome-gate{width:100%;}
-}
-@keyframes side-bounce{
-  0%,20%,50%,80%,100%{transform:translateY(0);}
-  40%{transform:translateY(-10px);}
-  60%{transform:translateY(-5px);}
-}
-
 @media (prefers-reduced-motion: reduce){
   .anim-up, .anim-left, .anim-fade, .anim-zoom, .anim-draw{opacity:1;transform:none;transition:none;}
   .anim-draw path, .anim-draw line{stroke-dashoffset:0;transition:none;}
-  .wg-btn::after, .inv-side-chevron{animation:none;}
+  .wg-btn::after{animation:none;}
   .welcome-gate{transition:none;}
 }
