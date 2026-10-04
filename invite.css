@@ -156,8 +156,11 @@
 .inv-hero-guest.anim-up{transform:translate(-50%, 40px);}
 .inv-hero-guest.anim-up.is-visible{transform:translateX(-50%);}
 .inv-hero .inv-hero-guest p{color:#383838;padding-bottom:0;}
-.inv-hero-dear{font-family:var(--font-body);font-size:16px;letter-spacing:1px;line-height:1.4;}
-.inv-hero-guest-name{font-family:var(--font-play);font-size:22px;letter-spacing:0;overflow-wrap:anywhere;}
+.inv-hero-dear{font-family:var(--font-body);font-size:16px;letter-spacing:1px;line-height:1.3;white-space:nowrap;}
+/* the guest's name, big (script.js shrinks it to keep the line on screen; at its smallest it may wrap) */
+.inv-hero-guest-name{font-family:var(--font-play);font-size:35px;letter-spacing:0;}
+.inv-hero-dear.is-wrapping{white-space:normal;}
+.inv-hero-dear.is-wrapping .inv-hero-guest-name{overflow-wrap:anywhere;}
 .inv-hero-invite{margin-top:8px;font-family:var(--font-body);font-size:14px;letter-spacing:1px;}
 .inv-hero .inv-row > *{margin-bottom:10px;}
 .inv-hero .inv-row > *:last-child{margin-bottom:0;}
@@ -440,7 +443,8 @@
   .inv-hero{height:100vh;background-position:center 40%;}
   .inv-hero-guest{top:56px;}
   .inv-hero-dear{font-size:19px;}
-  .inv-hero-guest-name{font-size:30px;}
+  .inv-hero-guest{width:min(1000px, 86%);}
+  .inv-hero-guest-name{font-size:48px;}
   .inv-hero-invite{font-size:17px;}
   .inv-hero .inv-row{max-width:none;padding-bottom:20px;}
   .inv-hero-of, .inv-hero-date{font-size:18px;letter-spacing:4px;}
