@@ -375,7 +375,8 @@
 .inv-wish-name{font-weight:700;color:#000000;}
 .inv-wish-time{margin-left:6px;color:#a9a9a9;}
 .inv-wish-msg{margin:0;font-size:13px;line-height:1.6em;color:#333333;white-space:pre-line;overflow-wrap:anywhere;}
-.inv-wish-msg + .inv-wish-msg{color:#888888;}
+.inv-wish-msg + .inv-wish-msg{color:#888888;margin-top:6px;}
+.site-main .inv-wish p{padding-bottom:0;}
 .inv-wishes-empty{font-size:13px;color:#888888;}
 
 /* ============ thank you ============ */

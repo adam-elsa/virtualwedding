@@ -13,6 +13,10 @@
   // Guestbook messages also go to the invitation's guestbook (CommentPress = WordPress comments
   // on that page), where they show publicly with the others. Set to '' to stop.
   const NSTORY_COMMENTS_URL = 'https://inv.nstory.id/wp-comments-post.php';
+  // ...and the guestbook shows the invitation's messages, read live from WordPress's public
+  // comments API (it allows this site to read it). Refreshed every minute. Set to '' to stop.
+  const NSTORY_WISHES_URL = 'https://inv.nstory.id/wp-json/wp/v2/comments?post=' + NSTORY_POST_ID
+    + '&per_page=100&_fields=id,author_name,date_gmt,content';
   const WEDDING_DATE = new Date('2026-10-24T12:30:00+07:00'); // Akad time, used for countdown
 
   // ---------- guest name from URL ----------
@@ -156,7 +160,60 @@
     if (toTop) wishesList.prepend(item); else wishesList.appendChild(item);
   }
 
+  // messages this visitor just sent, shown until the invitation's own copy comes back
+  let pendingWishes = [];
+  const wishKey = (name, message) => (name + '|' + message).replace(/\s+/g, ' ').trim().toLowerCase();
+
+  // WordPress returns the comment as HTML: turn it into plain lines (never inserted as HTML)
+  function htmlToText(html) {
+    const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+    doc.querySelectorAll('br').forEach((br) => br.replaceWith('\n'));
+    const paras = [...doc.querySelectorAll('p')];
+    return (paras.length ? paras.map((p) => p.textContent) : [doc.body.textContent]).join('\n').trim();
+  }
+
+  async function fetchNstoryWishes() {
+    const wishes = [];
+    for (let page = 1, pages = 1; page <= pages && page <= 10; page++) {
+      const res = await fetch(NSTORY_WISHES_URL + '&page=' + page);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      pages = parseInt(res.headers.get('X-WP-TotalPages'), 10) || 1;
+      (await res.json()).forEach((c) => wishes.push({
+        name: htmlToText(c.author_name),
+        message: htmlToText(c.content && c.content.rendered),
+        time: c.date_gmt ? c.date_gmt + 'Z' : '',
+      }));
+    }
+    return wishes; // newest first
+  }
+
+  // the invitation's messages, plus any of ours it doesn't show yet, on top
+  function showWishes(wishes) {
+    const seen = new Set(wishes.map((w) => wishKey(w.name, w.message)));
+    pendingWishes = pendingWishes.filter((w) => !seen.has(wishKey(w.name, w.message)));
+    wishesList.textContent = '';
+    [...pendingWishes, ...wishes].forEach((w) => renderWish(w.name, w.message, w.time, false));
+  }
+
+  let nstoryWishes = null; // last list read from the invitation
+  async function refreshNstoryWishes() {
+    try {
+      nstoryWishes = await fetchNstoryWishes();
+      showWishes(nstoryWishes);
+    } catch (err) {
+      // keep whatever is on screen; try again on the next refresh
+    }
+  }
+
   async function loadWishes() {
+    if (NSTORY_WISHES_URL) {
+      await refreshNstoryWishes();
+      if (nstoryWishes) {
+        setInterval(() => { if (!document.hidden) refreshNstoryWishes(); }, 60000);
+        return;
+      }
+    }
+    // no invitation to read from: the Google Sheet copy, if it's set up
     if (!RSVP_ENDPOINT_URL) return;
     try {
       const res = await fetch(RSVP_ENDPOINT_URL);
@@ -281,7 +338,15 @@
         send({ name, attendance: '', guests: '', message }),
         sendWishToNstory(name, message),
       ]);
-      renderWish(name, message, new Date().toISOString(), true);
+      const mine = { name, message, time: new Date().toISOString() };
+      if (nstoryWishes) {
+        // show it now, then let the invitation's own copy take its place once it's there
+        pendingWishes.unshift(mine);
+        showWishes(nstoryWishes);
+        [4000, 15000].forEach((ms) => setTimeout(refreshNstoryWishes, ms));
+      } else {
+        renderWish(mine.name, mine.message, mine.time, true);
+      }
       wishForm.elements.message.value = '';
       status.textContent = toSheet === 'preview' && !NSTORY_COMMENTS_URL ? 'Terima kasih! (mode pratinjau)' : '';
       status.className = 'rsvp-status ok';
