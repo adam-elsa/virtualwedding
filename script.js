@@ -265,14 +265,18 @@
   // this only fails on a network error, not if the invitation turns the entry down.
   async function sendToNstory(rsvp) {
     if (!NSTORY_AJAX_URL) return;
+    const coming = rsvp.attendance === 'Hadir';
+    const guests = parseInt(rsvp.guests, 10) || 1;
+    // The invitation's "Jumlah Tamu" only offers 1 or 2, and might turn down anything else; we
+    // allow up to 6, so for 3+ send 2 and keep the real number with the name: "Budi (5 tamu)".
     const fields = new URLSearchParams({
       __fluent_form_embded_post_id: NSTORY_POST_ID,
       _wp_http_referer: '/adam-elsa/',
-      input_text: rsvp.name,
-      input_radio: rsvp.attendance === 'Hadir' ? 'Saya akan hadir' : 'Maaf tidak hadir',
+      input_text: coming && guests > 2 ? `${rsvp.name} (${guests} tamu)` : rsvp.name,
+      input_radio: coming ? 'Saya akan hadir' : 'Maaf tidak hadir',
     });
-    // the invitation only asks "Jumlah Tamu" (1 or 2) of guests who are coming
-    if (rsvp.attendance === 'Hadir') fields.set('dropdown', rsvp.guests);
+    // it only asks "Jumlah Tamu" of guests who are coming
+    if (coming) fields.set('dropdown', String(Math.min(guests, 2)));
     await fetch(NSTORY_AJAX_URL, {
       method: 'POST',
       mode: 'no-cors',
