@@ -70,8 +70,9 @@
     if (opening) return;
     opening = true;
     startMusic();
-    // 3D gate (gate3d.js): the walk up to the hotel with the verse and our story —
-    // resolves as the doors open (or right away if the scene never loaded)
+    // 3D gate (gate3d.js): the walk up to the hotel with the verse, then the lobby with our
+    // story and the photo cards — resolves when the guest leaves it (or right away if the
+    // scene never loaded)
     const scene3d = window.weddingGate;
     Promise.resolve(scene3d ? scene3d.flyIn() : null).then(revealSite, revealSite);
   }
@@ -397,6 +398,60 @@
   giftPopup.addEventListener('click', (e) => {
     if (e.target === giftPopup || e.target.closest('.inv-popup-close')) hideGift();
   });
+
+  // ---------- the lobby's reception desk (gate3d.js) ----------
+  // The RSVP card at the 3D reception desk and the gift box's "salin" button; both go to the
+  // same places as the invitation's own form and account number below.
+  const lobbyRsvp = document.getElementById('lobbyRsvpForm');
+  if (lobbyRsvp) {
+    if (guest && !lobbyRsvp.elements.name.value) lobbyRsvp.elements.name.value = guest;
+    lobbyRsvp.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = lobbyRsvp.querySelector('.rsvp-status');
+      const name = lobbyRsvp.elements.name.value.trim();
+      if (!name) {
+        status.textContent = 'Mohon isi nama Anda.';
+        status.className = 'rsvp-status err';
+        lobbyRsvp.elements.name.focus();
+        return;
+      }
+      status.textContent = 'Mengirim...';
+      status.className = 'rsvp-status';
+      const rsvp = {
+        name,
+        attendance: lobbyRsvp.elements.attendance.value,
+        guests: lobbyRsvp.elements.attendance.value === 'Hadir' ? lobbyRsvp.elements.guests.value : '',
+        message: '',
+      };
+      try {
+        const [toSheet] = await Promise.all([send(rsvp), sendToNstory(rsvp)]);
+        status.textContent = toSheet === 'preview' && !NSTORY_AJAX_URL
+          ? 'Terima kasih! (mode pratinjau — belum tersambung ke Google Sheet)'
+          : 'Terima kasih atas konfirmasinya!';
+        status.className = 'rsvp-status ok';
+        // the invitation's own form shows the same answer when the guest gets there
+        rsvpForm.elements.name.value = name;
+        rsvpForm.elements.attendance.value = rsvp.attendance;
+        syncGuests();
+      } catch (err) {
+        status.textContent = 'Gagal mengirim. Silakan coba lagi.';
+        status.className = 'rsvp-status err';
+      }
+    });
+  }
+
+  const lobbyCopy = document.getElementById('lobbyCopyGift');
+  if (lobbyCopy) {
+    lobbyCopy.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(document.getElementById('lobbyGiftNumber').textContent.trim());
+        lobbyCopy.textContent = 'Tersalin!';
+        setTimeout(() => (lobbyCopy.textContent = 'Salin Nomor Rekening'), 1800);
+      } catch (err) {
+        // clipboard blocked — no-op
+      }
+    });
+  }
 
   const copyBtn = document.getElementById('copyGift');
   copyBtn.addEventListener('click', async () => {

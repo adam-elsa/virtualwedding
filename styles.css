@@ -43,6 +43,32 @@ a{color:inherit;}
   margin:0 0.15em;
 }
 
+.btn-solid, .btn-outline{
+  display:inline-block;
+  font-family:var(--font-sans);
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  font-size:12px;
+  padding:14px 30px;
+  border-radius:999px;
+  text-decoration:none;
+  cursor:pointer;
+  transition:transform .25s ease, box-shadow .25s ease, background .25s ease;
+}
+.btn-solid{
+  background:linear-gradient(135deg,var(--gold-soft),var(--gold));
+  color:#211a10;
+  border:none;
+  font-weight:600;
+}
+.btn-solid:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(203,161,92,0.35);}
+.btn-outline{
+  background:transparent;
+  border:1px solid var(--gold);
+  color:var(--gold-soft);
+}
+.btn-outline:hover{background:rgba(203,161,92,0.12);transform:translateY(-2px);}
+
 /* ============ gate ============ */
 .gate{
   position:fixed;
@@ -91,6 +117,14 @@ a{color:inherit;}
 }
 .gate.is-flying .gate-scrim::before{opacity:0;}
 .gate.is-flying .gate-scrim::after{opacity:1;}
+.gate-flash{
+  position:absolute;
+  inset:0;
+  z-index:3;
+  pointer-events:none;
+  opacity:0;
+  background:radial-gradient(circle at 50% 50%, #fff8e8, #f5dcaa 55%, #d2a15c);
+}
 /* the verse over the walk to the doors, then our story */
 :root{--text-halo:0 0 3px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.95), 0 0 20px rgba(0,0,0,0.9), 0 0 36px rgba(0,0,0,0.85), 0 0 64px rgba(0,0,0,0.65);}
 .gate-ayat, .gate-story{
@@ -144,12 +178,23 @@ a{color:inherit;}
   text-shadow:var(--text-halo);
 }
 .story-line:last-child{color:var(--gold-soft);margin-top:12px;}
-/* staggered reveal */
-.gate.show-story .story-line:nth-child(2){transition-delay:.3s;}
-.gate.show-story .story-line:nth-child(3){transition-delay:1.0s;}
-.gate.show-story .story-line:nth-child(4){transition-delay:1.7s;}
-.gate.show-story .story-line:nth-child(5){transition-delay:2.4s;}
-.gate.show-story .story-line:nth-child(6){transition-delay:3.1s;}
+/* the other lines fade; the last line lingers (on the dark glow), then flies to the RSVP button */
+.gate-story::before{transition:opacity 1s ease;}
+.gate.story-fly .gate-story::before{opacity:0;} /* the dark glow stays while the line lingers */
+.gate.story-leave .gate-story > *:not(:last-child){opacity:0;filter:blur(4px);transition:opacity .7s ease, filter .7s ease;transition-delay:0s;}
+.gate.story-leave .story-line:last-child{text-shadow:var(--text-halo), 0 0 22px rgba(226,199,138,0.55);}
+/* the RSVP button "catches" the line */
+.lobby-tag--cta.is-landing{animation:rsvpLand 1.4s ease-out;}
+@keyframes rsvpLand{
+  0%{box-shadow:0 0 0 0 rgba(226,199,138,0.9), 0 8px 22px rgba(203,161,92,0.35);}
+  100%{box-shadow:0 0 0 22px rgba(226,199,138,0), 0 8px 22px rgba(203,161,92,0.35);}
+}
+/* staggered reveal only: when leaving, the lines fade together with no delay */
+.gate.show-story:not(.story-leave) .story-line:nth-child(2){transition-delay:.3s;}
+.gate.show-story:not(.story-leave) .story-line:nth-child(3){transition-delay:1.0s;}
+.gate.show-story:not(.story-leave) .story-line:nth-child(4){transition-delay:1.7s;}
+.gate.show-story:not(.story-leave) .story-line:nth-child(5){transition-delay:2.4s;}
+.gate.show-story:not(.story-leave) .story-line:nth-child(6){transition-delay:3.1s;}
 .ayat-ornament{color:var(--gold);font-size:26px;margin-bottom:12px;text-shadow:var(--text-halo), 0 0 18px rgba(203,161,92,0.5);}
 .ayat-id{
   font-family:var(--font-display);
@@ -185,6 +230,191 @@ a{color:inherit;}
     transition:opacity 1.1s ease, transform 1.3s cubic-bezier(.2,.7,.2,1);
   }
   .ayat-ornament{text-shadow:var(--text-halo);}
+}
+
+/* lobby overlay */
+.lobby-ui{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  align-items:center;
+  text-align:center;
+  padding:max(5vh, env(safe-area-inset-top)) 24px max(5vh, env(safe-area-inset-bottom));
+  pointer-events:none;
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .9s ease, visibility .9s ease;
+}
+.gate.in-lobby .lobby-ui{opacity:1;visibility:visible;}
+.lobby-ui button{pointer-events:auto;}
+.lobby-title{
+  font-family:var(--font-display);
+  font-weight:500;
+  font-size:clamp(30px,7vw,44px);
+  margin:4px 0 6px;
+  color:var(--ink);
+  text-shadow:0 2px 18px rgba(0,0,0,0.6);
+}
+.lobby-hint{margin:0;font-size:12px;color:var(--ink-dim);letter-spacing:0.04em;text-shadow:0 1px 10px rgba(0,0,0,0.7);}
+.lobby-bottom{display:flex;gap:12px;align-items:center;margin-top:auto;}
+/* fallback to the plain invitation: a quiet two-line outline button */
+.lobby-next{padding:10px 24px;line-height:1.4;}
+.lobby-next small{
+  display:block;
+  font-size:10px;
+  letter-spacing:0.04em;
+  text-transform:none;
+  color:var(--ink-dim);
+  opacity:0.85;
+}
+.lobby-back{display:none;}
+.lobby-ui.is-focused .lobby-back{display:inline-block;}
+.lobby-ui.is-focused .lobby-next, .lobby-ui.is-focused .lobby-top{display:none;}
+.lobby-ui .btn-outline{background:rgba(21,19,26,0.55);backdrop-filter:blur(4px);}
+/* wide screens: with a card open, "Kembali" sits under the card, off the photo */
+@media (min-aspect-ratio:1/1) and (min-width:761px){
+  .lobby-ui.has-card .lobby-bottom{align-self:flex-end;width:min(380px,36vw);margin-right:6vw;justify-content:center;}
+}
+.lobby-story-head{display:none;}
+.lobby-ui.is-story .lobby-story-head{display:block;}
+
+/* floating group labels */
+.lobby-tag{
+  position:absolute;
+  left:0;top:0;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .35s ease;
+  font-family:var(--font-sans);
+  font-size:11px;
+  letter-spacing:0.22em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  color:var(--gold-soft);
+  background:rgba(18,14,11,0.78);
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:8px 14px;
+  margin-top:-10px;
+  backdrop-filter:blur(4px);
+  cursor:pointer;
+}
+.lobby-tag.is-visible{opacity:1;pointer-events:auto;}
+.lobby-tag[data-edge="left"]::before{content:'← ';}
+.lobby-tag[data-edge="right"]::after{content:' →';}
+/* RSVP reads as a button, not a label */
+.lobby-tag--cta{
+  background:linear-gradient(135deg,var(--gold-soft),var(--gold));
+  color:#211a10;
+  border:none;
+  font-weight:600;
+  padding:10px 22px;
+  margin-top:0;
+  box-shadow:0 8px 22px rgba(203,161,92,0.35);
+}
+
+/* info card: beside the photo on wide screens, below it on phones */
+.lobby-card{
+  position:absolute;
+  right:6vw;
+  top:50%;
+  width:min(380px,36vw);
+  transform:translateY(-46%);
+  padding:28px 26px;
+  text-align:center;
+  background:rgba(18,14,11,0.8);
+  border:1px solid var(--line);
+  border-radius:18px;
+  backdrop-filter:blur(8px);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:opacity .6s ease, transform .6s ease, visibility .6s;
+}
+.lobby-card.is-open{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(-50%);}
+.lobby-card section{display:none;}
+.lobby-card[data-show="groom"] [data-card="groom"],
+.lobby-card[data-show="couple"] [data-card="couple"],
+.lobby-card[data-show="bride"] [data-card="bride"],
+.lobby-card[data-show="map"] [data-card="map"],
+.lobby-card[data-show="rsvp"] [data-card="rsvp"],
+.lobby-card[data-show="gift"] [data-card="gift"]{display:block;}
+.card-gift{margin:14px 0 16px;padding:14px 10px;border:1px solid var(--line);border-radius:12px;}
+.card-gift .gift-bank{margin:0;font-size:12px;letter-spacing:0.24em;color:var(--gold);}
+.card-gift .gift-number{margin:6px 0;font-family:var(--font-display);font-size:28px;letter-spacing:0.06em;color:var(--ink);}
+.card-gift .gift-holder{margin:0;font-size:13px;color:var(--ink-dim);}
+.card-name{
+  font-family:var(--font-script);
+  font-weight:400;
+  font-size:clamp(44px,6vw,60px);
+  color:var(--gold-soft);
+  margin:4px 0 8px;
+  line-height:1.1;
+}
+.card-name .amp{font-size:0.8em;}
+.card-title{font-family:var(--font-display);font-weight:500;font-size:26px;margin:4px 0 4px;color:var(--ink);}
+.card-sub{margin:0 0 6px;font-size:13px;color:var(--ink-dim);letter-spacing:0.04em;}
+.card-parents{margin:0;font-family:var(--font-display);font-size:19px;line-height:1.5;color:var(--ink);}
+.card-map{margin:14px 0;border-radius:12px;overflow:hidden;border:1px solid var(--line);height:170px;background:#2a241e;}
+.card-map iframe{width:100%;height:100%;border:0;display:block;}
+.card-times{display:flex;gap:10px;margin-bottom:16px;}
+.card-times div{flex:1;border:1px solid var(--line);border-radius:12px;padding:10px 6px;}
+.card-times span{display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);}
+.card-times strong{display:block;font-family:var(--font-display);font-weight:500;font-size:22px;color:var(--ink);margin-top:2px;}
+.card-btn{display:inline-block;}
+/* RSVP: centred on screen, over the door */
+.lobby-card.is-center{
+  left:50%;right:auto;top:50%;bottom:auto;
+  width:min(380px,calc(100vw - 32px));
+  transform:translate(-50%,-46%);
+}
+.lobby-card.is-center.is-open{transform:translate(-50%,-50%);}
+.card-form{display:flex;flex-direction:column;gap:10px;margin-top:14px;text-align:left;}
+.card-form input, .card-form select, .card-form textarea{
+  width:100%;
+  font-family:var(--font-sans);
+  font-size:14px;
+  color:var(--ink);
+  background:rgba(255,255,255,0.06);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:10px 12px;
+}
+.card-form select option{color:#211a10;}
+.card-form textarea{resize:none;}
+.card-row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:var(--ink-dim);}
+.card-row input{width:84px;text-align:center;}
+.card-form .btn-solid{align-self:center;margin-top:4px;}
+.card-form .rsvp-status{margin:0;text-align:center;font-size:13px;min-height:1em;}
+
+@media (max-aspect-ratio:1/1), (max-width:760px){
+  .lobby-card{
+    left:16px;right:16px;width:auto;
+    top:auto;bottom:calc(max(5vh, env(safe-area-inset-bottom)) + 64px);
+    transform:translateY(12px);
+    padding:18px 18px 20px;
+  }
+  .lobby-card.is-open{transform:none;}
+  .card-name{font-size:44px;}
+  .card-map{height:120px;margin:10px 0;}
+  .card-times{margin-bottom:12px;}
+  /* couple cards: a slim column on the right, beside the photo instead of over it */
+  .lobby-card[data-show="groom"], .lobby-card[data-show="couple"], .lobby-card[data-show="bride"]{
+    left:auto;right:10px;
+    width:min(47vw,240px);
+    top:50%;bottom:auto;
+    transform:translateY(-44%);
+    padding:16px 10px;
+  }
+  .lobby-card[data-show="groom"].is-open, .lobby-card[data-show="couple"].is-open, .lobby-card[data-show="bride"].is-open{
+    transform:translateY(-50%);
+  }
+  .lobby-card[data-show="groom"] .card-name, .lobby-card[data-show="couple"] .card-name, .lobby-card[data-show="bride"] .card-name{font-size:36px;}
+  .lobby-card[data-show="groom"] .eyebrow, .lobby-card[data-show="couple"] .eyebrow, .lobby-card[data-show="bride"] .eyebrow{font-size:10px;letter-spacing:0.18em;}
+  .card-parents{font-size:15px;}
 }
 
 .gate-loader{
@@ -287,7 +517,7 @@ a{color:inherit;}
   position:fixed;
   bottom:18px;
   right:18px;
-  z-index:60; /* above the 3D gate, so the music can be paused there too */
+  z-index:60; /* above the 3D gate + lobby, so the music can be paused there too */
   width:48px;height:48px;
   padding:0;
   border:none;

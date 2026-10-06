@@ -47,13 +47,99 @@
       </button>
     </div>
   </div>
+  <!-- inside the lobby: look around, tap a photo, continue to the invitation -->
+  <div class="lobby-ui" id="lobbyUi">
+    <div class="lobby-top">
+      <p class="eyebrow">Selamat Datang</p>
+      <h2 class="lobby-title">Momen Kami</h2>
+      <p class="lobby-hint" id="lobbyHint"></p>
+    </div>
+    <div class="lobby-story-head">
+      <p class="eyebrow">Cerita Kami</p>
+      <p class="lobby-hint">Ketuk foto untuk melihat lebih dekat</p>
+    </div>
+    <!-- labels floating over each photo group (positioned by gate3d.js) -->
+    <button class="lobby-tag" data-group="couple" type="button">Kedua Mempelai</button>
+    <button class="lobby-tag" data-group="map" type="button">Lokasi &amp; Tempat</button>
+    <button class="lobby-tag lobby-tag--cta" data-group="rsvp" type="button">RSVP</button>
+    <button class="lobby-tag" data-group="story" type="button">Cerita Kami</button>
+    <button class="lobby-tag" data-group="gift" type="button">Amplop Digital</button>
+    <!-- info card beside the photo being viewed; data-show picks the section -->
+    <div class="lobby-card" id="lobbyCard">
+      <section data-card="groom">
+        <p class="eyebrow">Mempelai Pria</p>
+        <h3 class="card-name">Adam</h3>
+        <p class="card-sub">Putra dari</p>
+        <p class="card-parents">Bapak Badru Kamal<br>&amp; Ibu Ika Kurniaputri</p>
+      </section>
+      <section data-card="couple">
+        <p class="eyebrow">Kedua Mempelai</p>
+        <h3 class="card-name">Adam <span class="amp">&amp;</span> Elsa</h3>
+      </section>
+      <section data-card="bride">
+        <p class="eyebrow">Mempelai Wanita</p>
+        <h3 class="card-name">Elsa</h3>
+        <p class="card-sub">Putri dari</p>
+        <p class="card-parents">Bapak Muhammad Hasan<br>&amp; Ibu Damini</p>
+      </section>
+      <!-- same as the invitation's "Amplop Digital" section -->
+      <section data-card="gift">
+        <p class="eyebrow">Amplop Digital</p>
+        <h3 class="card-title">Hadiah Pernikahan</h3>
+        <p class="card-sub">Doa restu Bapak/Ibu/Saudara/i adalah hadiah terindah bagi kami. Namun jika ingin memberi tanda kasih, dapat melalui:</p>
+        <div class="card-gift">
+          <p class="gift-bank">BCA</p>
+          <p class="gift-number" id="lobbyGiftNumber">8691241238</p>
+          <p class="gift-holder">a.n. Elsa</p>
+        </div>
+        <button class="btn-solid card-btn" id="lobbyCopyGift" type="button">Salin Nomor Rekening</button>
+      </section>
+      <section data-card="rsvp">
+        <p class="eyebrow">RSVP</p>
+        <h3 class="card-title">Konfirmasi Kehadiran</h3>
+        <form class="card-form" id="lobbyRsvpForm">
+          <input type="text" name="name" placeholder="Nama" aria-label="Nama" required autocomplete="name">
+          <select name="attendance" aria-label="Kehadiran" required>
+            <option value="">Kehadiran...</option>
+            <option value="Hadir">Saya akan hadir</option>
+            <option value="Tidak Hadir">Maaf, tidak bisa hadir</option>
+          </select>
+          <label class="card-row">Jumlah tamu <input type="number" name="guests" min="1" max="10" value="1"></label>
+          <button type="submit" class="btn-solid">Kirim</button>
+          <p class="rsvp-status" role="status"></p>
+        </form>
+      </section>
+      <section data-card="map">
+        <p class="eyebrow">Lokasi &amp; Tempat</p>
+        <h3 class="card-title">Golden Boutique Hotel</h3>
+        <p class="card-sub">Jakarta · Sabtu, 24 Oktober 2026</p>
+        <div class="card-map">
+          <iframe data-src="https://www.google.com/maps?q=Golden+Boutique+Hotel+Jakarta&amp;output=embed" title="Peta Golden Boutique Hotel" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+        <div class="card-times">
+          <div><span>Akad Nikah</span><strong>13.00 WIB</strong></div>
+          <div><span>Resepsi</span><strong>16.00 WIB</strong></div>
+        </div>
+        <a class="btn-solid card-btn" href="https://www.google.com/maps/search/?api=1&amp;query=Golden+Boutique+Hotel+Jakarta" target="_blank" rel="noopener">Buka Google Maps</a>
+      </section>
+    </div>
+    <div class="lobby-bottom">
+      <button class="btn-outline lobby-back" id="lobbyBack" type="button">← Kembali</button>
+      <!-- leaves the lobby for the invitation page below -->
+      <button class="btn-outline lobby-next" id="lobbyNext" type="button">
+        Lanjut ke Undangan
+        <small>(halaman undangan lengkap)</small>
+      </button>
+    </div>
+  </div>
+  <div class="gate-flash" aria-hidden="true"></div>
   <!-- verse overlaid on the walk up to the doors (gate3d.js toggles .show-ayat) -->
   <div class="gate-ayat">
     <span class="ayat-ornament" aria-hidden="true">❧</span>
     <p class="ayat-id">“Dan segala sesuatu Kami ciptakan berpasang-pasangan agar kamu mengingat (kebesaran Allah).”</p>
     <p class="ayat-src">QS. Az-Zariyat: 49</p>
   </div>
-  <!-- our story, line by line, after the verse; as the doors open, the invitation opens -->
+  <!-- our story, line by line, over the lobby just after stepping inside -->
   <div class="gate-story">
     <span class="ayat-ornament" aria-hidden="true">❧</span>
     <p class="story-line">Perjalanan kami tidak singkat.</p>

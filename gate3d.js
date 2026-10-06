@@ -1,9 +1,10 @@
 // Low-poly Golden Boutique Hotel — the opening scene behind the gate.
-// The verse and then our story play over the walk up to the doors; as the doors
-// open, the invitation page takes over.
+// After the doors open, the verse shows on the white flash and the guest lands
+// in the lobby (lobby3d.js).
 // Exposes window.weddingGate = { flyIn(): Promise, dispose() } for script.js.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createLobby } from './lobby3d.js';
 
 const gate = document.getElementById('gate');
 const canvas = document.getElementById('gateCanvas');
@@ -413,19 +414,21 @@ function init() {
   }
 
   // ---------- animation state ----------
-  // intro -> idle -> walk (verse, then our story, overlaid on the way up to the doors)
-  // -> done (the doors start to open; resolves flyIn's promise)
+  // intro -> idle -> walk (verse overlaid on the way; doors open, white flash) -> arrive
+  // -> lobby (look around, tap photos) -> leave (resolves flyIn's promise)
   const clock = new THREE.Clock();
   const INTRO = 7; // seconds of slow zoom-in from the left
   const CREEP = 0.25; // then keep strolling forward, closing up to 25% of the distance (never stopping dead)
   const CREEP_TIME = 80; // seconds: how gradually that stroll eases off
-  // text over the walk (ms after "Buka Undangan"); the walk is paced to reach the doors as it ends
-  const AYAT_AT = 400, AYAT_MS = 9750;                // QS. Az-Zariyat 49
-  const STORY_AT = AYAT_AT + AYAT_MS + 1200, STORY_MS = 7500; // our story, once the verse has faded (a tap skips ahead)
-  const DOOR_AT = STORY_AT + STORY_MS;                // doors start to open -> the invitation
+  const ARRIVE_MS = 1900; // white flash -> lobby
+  const STORY_AT = 1300, STORY_MS = 7500; // our story over the lobby as the camera glides in (a tap skips)
   let state = 'intro';
   let walk = null;
+  let arrive = null;
+  let active = scene;
   let raf = 0;
+  const flash = gate.querySelector('.gate-flash');
+  const lobby = createLobby();
 
   const easeOut = (t) => 1 - Math.pow(1 - t, 3);
   const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
@@ -452,16 +455,18 @@ function init() {
     pointer.sx += (pointer.x - pointer.sx) * 0.05;
     pointer.sy += (pointer.y - pointer.sy) * 0.05;
 
-    // drifting motes
-    const pos = motes.geometry.attributes.position;
-    for (let i = 0; i < MOTES; i++) {
-      let y = pos.getY(i) + moteSpeed[i] * dt;
-      if (y > 26) y = 0;
-      pos.setY(i, y);
-      pos.setX(i, pos.getX(i) + Math.sin(t * 0.5 + i) * 0.004);
+    if (active === scene) {
+      // drifting motes
+      const pos = motes.geometry.attributes.position;
+      for (let i = 0; i < MOTES; i++) {
+        let y = pos.getY(i) + moteSpeed[i] * dt;
+        if (y > 26) y = 0;
+        pos.setY(i, y);
+        pos.setX(i, pos.getX(i) + Math.sin(t * 0.5 + i) * 0.004);
+      }
+      pos.needsUpdate = true;
+      statueGlow.material.opacity = 0.22 + Math.sin(t * 1.4) * 0.06;
     }
-    pos.needsUpdate = true;
-    statueGlow.material.opacity = 0.22 + Math.sin(t * 1.4) * 0.06;
 
     if (state === 'intro' || state === 'idle') {
       const k = easeOut(Math.min(1, t / INTRO));
@@ -473,13 +478,17 @@ function init() {
       placeCamera(THREE.MathUtils.lerp(-0.34, 0, k) + swayAz, r, TARGET.y - pointer.sy * 1.6);
       camera.position.y += Math.abs(Math.sin(t * Math.PI * 0.8)) * 0.025; // unhurried footsteps
       setViewShift(baseShift());
-    } else if (walk) {
+    } else if (state === 'walk') {
       stepWalk(performance.now() - walk.start);
+    } else if (state === 'arrive') {
+      stepArrive(performance.now() - arrive.start);
     }
-    renderer.render(scene, camera);
+    if (active === lobby.scene) lobby.update(camera, t, dt, pointer);
+    if (state === 'lobby') tickLobby();
+    renderer.render(active, camera);
   }
 
-  // walk around the fountain and up the carpet with the text overlaid; the doors swing open
+  // walk around the fountain, up the carpet, doors swing open, step inside
   function stepWalk(ms) {
     const W = walk;
     // ease the picture back to centre as the walk starts, so the doors are framed dead ahead
@@ -503,34 +512,360 @@ function init() {
       camera.updateProjectionMatrix();
       camera.rotateZ(Math.sin((ms / 1000) * Math.PI * 0.95) * 0.008 * pace);
     } else {
-      // at the doors, easing forward while the page fades over
       const stop = W.curve.points[W.curve.points.length - 1];
-      camera.position.set(0, EYE, stop.z - smooth(W.walkMs, W.walkMs + W.doorMs, ms) * 0.6);
+      const creep = smooth(W.walkMs, W.enterAt, ms) * 0.6;
+      const enter = Math.pow(Math.min(1, Math.max(0, (ms - W.enterAt) / W.enterMs)), 2);
+      camera.position.set(0, EYE, stop.z - creep - enter * 10);
       camera.lookAt(DOOR_LOOK);
+      camera.fov = W.doorFov + enter * 10;
+      camera.updateProjectionMatrix();
     }
     const doorK = easeOut(Math.min(1, Math.max(0, (ms - W.doorAt) / W.doorMs)));
     setDoors(doorK);
     hall.intensity = 30 + 90 * doorK;
     porticoLight.intensity = 45 + 60 * doorK;
-    gate.classList.toggle('show-ayat', ms >= AYAT_AT && ms < AYAT_AT + AYAT_MS);
-    gate.classList.toggle('show-story', ms >= STORY_AT);
-    // the doors are swinging open: over to the invitation
-    if (ms >= W.walkMs && state === 'walk') {
-      state = 'done';
-      W.resolve();
+    if (flash) flash.style.opacity = String(smooth(W.enterAt + W.enterMs * 0.4, W.endMs, ms));
+    // the verse (QS. Az-Zariyat 49) overlays the whole walk, fading as the camera
+    // steps through the doorway (~80% of the way in); our story follows inside
+    gate.classList.toggle('show-ayat', ms >= 500 && ms < W.enterAt + W.enterMs * 0.8);
+    if (ms >= W.endMs) startArrive();
+  }
+
+  // through the doors: under the white flash, swap to the lobby, then let the flash fade
+  function startArrive() {
+    state = 'arrive';
+    arrive = { start: performance.now(), entered: false };
+    setViewShift(0);
+    gate.classList.remove('show-ayat', 'show-story');
+    renderer.compile(lobby.scene, camera); // warm up shaders while the screen is white
+  }
+
+  function stepArrive(ms) {
+    if (!arrive.entered && ms >= 250) {
+      arrive.entered = true;
+      active = lobby.scene;
+      lobby.enter(camera);
     }
+    if (arrive.entered && flash) flash.style.opacity = String(1 - smooth(250, ARRIVE_MS, ms));
+    // our story rises over the lobby as the flash clears; then all but the last line fade.
+    // "Dan kami ingin merayakannya bersama kalian." lingers, glides (full size) over to the
+    // RSVP button, waits while the button appears beneath it, then shrinks into it.
+    // leave: the other lines fade (0.7 s) -> linger: only once they're gone, the last line rises
+    // to the centre (1.2 s) and holds -> move: it glides over the RSVP button -> arrive
+    const leaveAt = STORY_AT + STORY_MS, lingerAt = leaveAt + 1200, moveAt = lingerAt + 2000, arriveAt = moveAt + 1300;
+    if (ms >= STORY_AT) gate.classList.add('show-story');
+    if (ms >= leaveAt) gate.classList.add('story-leave');
+    if (ms >= moveAt) gate.classList.add('story-fly');
+    if (ms >= lingerAt && !arrive.lingered) {
+      arrive.lingered = true;
+      lingerStoryLine();
+    }
+    if (ms >= moveAt && !arrive.moved) {
+      arrive.moved = true;
+      moveStoryToRsvp();
+    }
+    if (ms >= arriveAt) {
+      // the lobby (and its RSVP button) fades in under the line; once it's up, the line shrinks away
+      state = 'lobby';
+      gate.classList.add('in-lobby');
+      setTimeout(shrinkStoryIntoRsvp, 700);
+    }
+  }
+
+  // as the other lines fade, the last one drifts up to the centre and grows a little
+  let storyBase = null; // its untransformed centre, so the moves can be measured from it
+  let storyToRsvp = null; // translation that puts it over the RSVP button
+  function lingerStoryLine() {
+    const line = gate.querySelector('.story-line:last-child');
+    if (!line) return;
+    const r = line.getBoundingClientRect();
+    storyBase = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    const c = canvas.getBoundingClientRect();
+    line.style.transition = 'transform 1.2s cubic-bezier(.3,.7,.2,1)';
+    line.style.transform = `translateY(${c.top + c.height * 0.42 - storyBase.y}px) scale(1.12)`;
+  }
+
+  // glide over the RSVP button at full size
+  function moveStoryToRsvp() {
+    const line = gate.querySelector('.story-line:last-child');
+    if (!line || !storyBase) return;
+    const c = canvas.getBoundingClientRect();
+    tmp.copy(lobby.anchors.rsvp).project(camera);
+    storyToRsvp = {
+      x: c.left + ((tmp.x + 1) / 2) * c.width - storyBase.x,
+      y: c.top + ((1 - tmp.y) / 2) * c.height - storyBase.y,
+    };
+    line.style.transition = 'transform 1.3s cubic-bezier(.65,0,.35,1)';
+    line.style.transform = `translate(${storyToRsvp.x}px, ${storyToRsvp.y}px)`;
+  }
+
+  // the RSVP button is showing: shrink the line down into it, with the button's gold pulse
+  function shrinkStoryIntoRsvp() {
+    const line = gate.querySelector('.story-line:last-child');
+    const rsvp = gate.querySelector('.lobby-tag[data-group="rsvp"]');
+    if (line && storyToRsvp) {
+      line.style.transition = 'transform .6s cubic-bezier(.5,0,.75,0), opacity .6s ease';
+      line.style.transform = `translate(${storyToRsvp.x}px, ${storyToRsvp.y}px) scale(0.15)`;
+      line.style.opacity = '0';
+    }
+    setTimeout(() => {
+      if (rsvp) {
+        rsvp.classList.add('is-landing');
+        setTimeout(() => rsvp.classList.remove('is-landing'), 1500);
+      }
+      if (line) line.style.visibility = 'hidden'; // hide before letting the overlay go
+      gate.classList.remove('show-story', 'story-leave', 'story-fly');
+      setTimeout(() => { if (line) line.style.cssText = ''; }, 1400);
+    }, 550);
   }
 
   // tap while the story is up to move on sooner
   gate.addEventListener('pointerdown', () => {
-    if (state !== 'walk' || performance.now() - walk.start < STORY_AT + 1500) return;
-    state = 'done';
+    if (state !== 'arrive') return;
+    const ms = performance.now() - arrive.start;
+    // skip to where the last line lingers, so it still flies into the RSVP button
+    if (ms > STORY_AT + 1500 && ms < STORY_AT + STORY_MS) arrive.start = performance.now() - (STORY_AT + STORY_MS);
+  });
+
+  // ---------- lobby: labelled photo groups ----------
+  // rest   -> look around; hover (or on phones, always) shows each group's label
+  // couple -> tour: pans Adam (card) -> Elsa (card) -> together (card); a tap skips to the end
+  // map    -> map board + card with Google Maps and the Akad/Resepsi times
+  // rsvp   -> desk / door / photo by the door: face the door, RSVP card over it
+  // story  -> tap a photo: zoom into it; the label: overview of the corner (back returns there)
+  // couple tour: one continuous pan Adam -> Elsa -> together, lingering on each photo
+  // and quicker only between them; the card follows the camera
+  const COUPLE_TOUR = ['adam', 'elsa', 'together'];
+  const TOUR_PAN = 15; // seconds for the pan itself
+  const tourCard = (u) => (u < 0.5 ? 'groom' : u < 1.5 ? 'bride' : 'couple');
+  const CARD_PHOTO = { groom: 'adam', bride: 'elsa', couple: 'together', gift: 'gift' };
+  // wide screens: the couple cards ride along on the photo's right edge instead of the screen's
+  const cardBeside = () => canvas.clientWidth / canvas.clientHeight >= 1 && canvas.clientWidth > 760;
+  const cardReserve = () => {
+    const W = canvas.clientWidth;
+    return cardBeside() ? (Math.min(380, 0.36 * W) + 56) / W : 0;
+  };
+  const lobbyUi = document.getElementById('lobbyUi');
+  const lobbyHint = document.getElementById('lobbyHint');
+  const lobbyBack = document.getElementById('lobbyBack');
+  const lobbyNext = document.getElementById('lobbyNext');
+  const card = document.getElementById('lobbyCard');
+  const tags = [...document.querySelectorAll('.lobby-tag')];
+  if (lobbyHint) {
+    lobbyHint.textContent = isTouch
+      ? 'Miringkan ponsel untuk melihat sekeliling · ketuk foto untuk membuka'
+      : 'Arahkan kursor ke foto · klik untuk membuka';
+  }
+
+  let view = { name: 'rest' };
+  let hovered = null;
+  let cardTimer = 0;
+
+  function showCard(name, delay) {
+    clearTimeout(cardTimer);
+    // the RSVP card sits centred over the door; the others beside/below the photo
+    if (lobbyUi) lobbyUi.classList.toggle('has-card', !!name && name !== 'rsvp');
+    if (!card) return;
+    card.classList.remove('is-open');
+    if (!name) return;
+    cardTimer = setTimeout(() => {
+      card.dataset.show = name;
+      card.classList.toggle('is-center', name === 'rsvp');
+      if (name !== 'rsvp') card.style.left = card.style.top = ''; // back to the stylesheet's placement
+      if (name === 'map') {
+        // load the Google map only when someone actually opens it
+        const frame = card.querySelector('iframe[data-src]');
+        if (frame && !frame.src) frame.src = frame.dataset.src;
+      }
+      card.classList.add('is-open');
+    }, delay);
+  }
+
+  function setView(next) {
+    view = next;
+    if (!lobbyUi) return;
+    lobbyUi.classList.toggle('is-focused', next.name !== 'rest');
+    lobbyUi.classList.toggle('is-story', next.name === 'story');
+    setHover(null);
+  }
+
+  function setHover(group) {
+    if (group === hovered) return;
+    hovered = group;
+    lobby.highlight(group);
+    canvas.style.cursor = group ? 'pointer' : '';
+  }
+
+  function openGroup(group, entry) {
+    if (group === 'couple') {
+      setView({ name: 'couple', card: 'groom' });
+      lobby.goTour(camera, COUPLE_TOUR, 'caption', 1.8, TOUR_PAN, cardReserve());
+      showCard('groom', 1300);
+    } else if (group === 'map') {
+      setView({ name: 'map' });
+      lobby.goItem(camera, 'map', 'tall', 1.6);
+      showCard('map', 1100);
+    } else if (group === 'gift') {
+      setView({ name: 'gift', card: 'gift' });
+      lobby.goGift(camera, giftFraming(), 1.6);
+      showCard('gift', 1100);
+    } else if (group === 'rsvp') {
+      setView({ name: 'rsvp' });
+      // measure the RSVP card, then frame the door to sit just inside it
+      card.classList.remove('is-open');
+      card.dataset.show = 'rsvp';
+      card.classList.add('is-center');
+      const r = card.getBoundingClientRect();
+      const W = canvas.clientWidth, H = canvas.clientHeight;
+      // look toward the door: just left of centre on wide screens, centred on phones
+      const ndcX = W / H >= 1 ? -0.18 : 0;
+      const at = lobby.goDoor(camera, (r.width * 0.72) / W, (r.height * 0.72) / H, ndcX, 1.6);
+      card.style.left = `${Math.min(W - r.width / 2 - 16, Math.max(r.width / 2 + 16, at.x * W))}px`;
+      card.style.top = `${Math.min(H - r.height / 2 - 90, Math.max(r.height / 2 + 16, at.y * H))}px`;
+      showCard('rsvp', 1100);
+    } else if (group === 'story' && entry) {
+      // a single photo: zoom straight into it
+      setView({ name: 'photo', parent: view.name === 'story' ? 'story' : 'rest' });
+      lobby.goItem(camera, entry.id, 'center', 1.3);
+      showCard(null);
+    } else if (group === 'story') {
+      // the label: step back to see the whole corner
+      setView({ name: 'story' });
+      lobby.goStory(camera, 2.2);
+      showCard(null);
+    }
+  }
+
+  // tap during the pan: jump ahead to the last photo; tap once there: leave
+  function skipTour() {
+    if (lobby.tourDone()) return back();
+    lobby.goItem(camera, COUPLE_TOUR[COUPLE_TOUR.length - 1], 'caption', 1.4, cardReserve());
+    view.card = tourCard(COUPLE_TOUR.length - 1);
+    showCard(view.card, 900);
+  }
+
+  function back() {
+    if (view.name === 'photo' && view.parent === 'story') return openGroup('story');
+    setView({ name: 'rest' });
+    lobby.goRest(camera, 1.6);
+    showCard(null);
+  }
+
+  // Wide screens: the kotak angpao and its card sit together as a pair in the middle of the
+  // screen (box a little left of centre, card right beside it); phones keep box above, card below.
+  function giftFraming() {
+    if (!cardBeside()) return { ndcY: 0.45, hy: 0.36 }; // phones: box in the upper part, above the card
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    const hy = 0.55;                                    // table + box fill ~55% of the height
+    const boxW = (0.9 / 1.28) * hy * H;
+    const cardW = Math.min(380, 0.36 * W);
+    const left = (W - (boxW + 24 + cardW)) / 2;         // centre the pair
+    return { ndcX: ((left + boxW / 2) / W) * 2 - 1, hy };
+  }
+
+  // Keep the couple (and angpao) card attached to the right side of its item (wide screens),
+  // following it as the camera moves; everywhere else the stylesheet places the card.
+  function placeCoupleCard() {
+    const photo = (view.name === 'couple' || view.name === 'gift') && cardBeside() && CARD_PHOTO[view.card];
+    if (!photo) {
+      if (card.dataset.beside) {
+        delete card.dataset.beside;
+        card.style.left = card.style.top = card.style.right = '';
+      }
+      return;
+    }
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    const r = lobby.screenRect(camera, photo, W, H);
+    const cw = card.offsetWidth;
+    card.dataset.beside = '1';
+    card.style.right = 'auto';
+    card.style.left = `${Math.min(W - cw - 16, r.right + 24)}px`;
+    card.style.top = `${Math.min(H - 120, Math.max(120, (r.top + r.bottom) / 2))}px`;
+  }
+
+  // called every frame while in the lobby
+  function tickLobby() {
+    if (view.name === 'couple') {
+      const u = lobby.tourProgress();
+      if (u >= 0 && tourCard(u) !== view.card) {
+        view.card = tourCard(u);
+        showCard(view.card, 250);
+      }
+    }
+    placeCoupleCard();
+    // float each group's label over its photos
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    const showAll = isTouch && view.name === 'rest' && lobby.settled();
+    for (const tag of tags) {
+      const group = tag.dataset.group;
+      tmp.copy(lobby.anchors[group]).project(camera);
+      const inFront = tmp.z < 1;
+      // keep labels on screen; on phones, groups out of view get pinned to the edge
+      const half = tag.offsetWidth / 2 + 10;
+      const x = ((tmp.x + 1) / 2) * w;
+      const cx = Math.min(w - half, Math.max(half, x));
+      const edge = x < 0 ? 'left' : x > w ? 'right' : '';
+      tag.dataset.edge = edge;
+      // the RSVP button is always there; the other labels appear on hover (always on phones)
+      const show = inFront && view.name === 'rest' && (showAll || group === 'rsvp' || (hovered === group && !edge));
+      tag.classList.toggle('is-visible', show);
+      // labels float just above their anchor; the RSVP button is centred on the desk front
+      const lift = group === 'rsvp' ? '-50%' : '-100%';
+      tag.style.transform = `translate(${cx}px, ${((1 - tmp.y) / 2) * h}px) translate(-50%, ${lift})`;
+    }
+  }
+
+  const toNdc = (e) => {
+    const r = canvas.getBoundingClientRect();
+    return [((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1];
+  };
+  // groups you can open from each view
+  const clickable = (entry) => {
+    if (!entry) return false;
+    if (view.name === 'rest') return true;
+    if (view.name === 'story') return entry.group === 'story';
+    return false;
+  };
+  let downAt = null;
+  canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
+  canvas.addEventListener('pointerup', (e) => {
+    if (state !== 'lobby' || !downAt) return;
+    const moved = Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]);
+    downAt = null;
+    if (moved > 10) return;
+    const entry = lobby.pick(camera, ...toNdc(e));
+    if (clickable(entry)) {
+      openGroup(entry.group, entry);
+    } else if (view.name === 'couple') {
+      skipTour();
+    } else if (view.name !== 'rest') {
+      back();
+    }
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (state !== 'lobby' || e.pointerType !== 'mouse') return;
+    const entry = lobby.pick(camera, ...toNdc(e));
+    setHover(clickable(entry) ? entry.group : null);
+  });
+  canvas.addEventListener('pointerleave', (e) => {
+    if (e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.lobby-tag')) return;
+    setHover(null);
+  });
+  for (const tag of tags) {
+    tag.addEventListener('click', () => { if (state === 'lobby' && view.name === 'rest') openGroup(tag.dataset.group); });
+    tag.addEventListener('pointerleave', (e) => { if (e.relatedTarget !== canvas && !isTouch) setHover(null); });
+  }
+  if (lobbyBack) lobbyBack.addEventListener('click', back);
+  if (lobbyNext) lobbyNext.addEventListener('click', () => {
+    if (state !== 'lobby') return;
+    state = 'leave';
+    gate.classList.remove('in-lobby');
     walk.resolve();
   });
 
   // ---------- public API ----------
   window.weddingGate = {
-    // resolves as the doors open, once the verse and our story have played
+    // resolves once the guest leaves the lobby for the invitation
     flyIn() {
       if (walk) return walk.promise;
       gate.classList.add('is-flying');
@@ -552,10 +887,12 @@ function init() {
       const dist = 6.6 + 0.5;
       const halfH = Math.atan(Math.tan(Math.atan(2.2 / dist)) / camera.aspect);
       walk.doorFov = Math.max(40, THREE.MathUtils.radToDeg(halfH * 2));
-      // the doors start to open just before the camera reaches them, as the text ends
-      walk.doorAt = DOOR_AT;
+      walk.walkMs = Math.min(15000, Math.max(11000, 6400 + walk.curve.getLength() * 70)); // unhurried: half the original pace
+      walk.doorAt = walk.walkMs - 500;
       walk.doorMs = 1700;
-      walk.walkMs = DOOR_AT + 500;
+      walk.enterAt = walk.walkMs + 1000;
+      walk.enterMs = 1900;
+      walk.endMs = walk.enterAt + walk.enterMs;
       walk.start = performance.now();
       state = 'walk';
       return walk.promise;
@@ -566,13 +903,15 @@ function init() {
       window.removeEventListener('pointermove', onPointer);
       window.removeEventListener('pointerdown', onPointer);
       window.removeEventListener('deviceorientation', onOrient);
-      scene.traverse((o) => {
-        if (o.geometry) o.geometry.dispose();
-        if (o.material) {
-          if (o.material.map) o.material.map.dispose();
-          o.material.dispose();
-        }
-      });
+      for (const s of [scene, lobby.scene]) {
+        s.traverse((o) => {
+          if (o.geometry) o.geometry.dispose();
+          if (o.material) {
+            if (o.material.map) o.material.map.dispose();
+            o.material.dispose();
+          }
+        });
+      }
       envMap.dispose();
       pmrem.dispose();
       renderer.dispose();
