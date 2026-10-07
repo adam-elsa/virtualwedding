@@ -207,6 +207,7 @@ export function createControls(canvas, stick) {
 // every mesh whose world box reaches into the band a walking guest occupies counts.
 // Floors, rugs and carpets are too flat to reach it; chandeliers and the ceiling are above it.
 const BAND = { lo: 0.35, hi: 1.5 };
+const FOOT = 0.55;   // a blocker has to stand on the floor; anything starting higher is overhead
 const FLAT = 0.3;    // a box shallower than this is something you walk on, not into
 const HUGE = 0.62;   // a box covering more than this much of the room is the shell, not furniture
 
@@ -217,8 +218,12 @@ export function buildBlockers(scene, { w, d, skip } = {}) {
   const m = new THREE.Matrix4();
   const area = w && d ? w * d : Infinity;
   scene.updateMatrixWorld(true);
+  // A mesh nobody can see is not something to walk into. Both rooms hide boxes around
+  // their subjects for the raycaster to hit (ballroom3d.js's `proxy`), and those are much
+  // bigger than what they stand for — the one around the gazebo spans the whole aisle.
+  const seen = (o) => { for (let n = o; n; n = n.parent) if (!n.visible) return false; return true; };
   scene.traverse((o) => {
-    if (!o.isMesh || (skip && skip(o))) return;
+    if (!o.isMesh || !seen(o) || (skip && skip(o))) return;
     if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
     // an instanced mesh's own box covers every copy at once (every wall slat as one
     // slab across the room), so take each instance's box on its own
@@ -233,6 +238,12 @@ export function buildBlockers(scene, { w, d, skip } = {}) {
         box.copy(geoBox).applyMatrix4(o.matrixWorld);
       }
       if (box.max.y < BAND.lo || box.min.y > BAND.hi) continue;      // under foot, or overhead
+      // It also has to reach the floor. Plenty of the decoration hangs in the band without
+      // standing in it — the crescent flower gates and the gazebo roof arch right over the
+      // aisle, and the standing flowers are a ball of blooms on a thin pole. Blocking those
+      // where they are widest walls off the aisle and puts a metre of nothing round each pole;
+      // their legs and poles reach the floor and block on their own.
+      if (box.min.y > FOOT) continue;
       if (box.max.y - box.min.y < FLAT) continue;                    // a rug, a step, a tabletop edge
       const bw = box.max.x - box.min.x, bd = box.max.z - box.min.z;
       if (bw * bd > area * HUGE) continue;                           // the floor or the ceiling

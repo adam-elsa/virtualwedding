@@ -87,7 +87,79 @@ export function createLobby() {
   ceil.rotation.x = Math.PI / 2;
   add(new THREE.PlaneGeometry(D, H), M.backing, -W / 2, H / 2, 0).rotation.y = Math.PI / 2;
   add(new THREE.PlaneGeometry(D, H), M.backing, W / 2, H / 2, 0).rotation.y = -Math.PI / 2;
-  add(new THREE.PlaneGeometry(W, H), M.backing, 0, H / 2, D / 2).rotation.y = Math.PI;
+
+  // ---------- the way in: the hotel's glass entrance, seen from inside ----------
+  // The guest walked through these doors on the way in and can now turn round and look back
+  // at them. Night outside, the portico lit; a gold-framed curtain wall with a pair of glass
+  // doors in the middle, and the warm spill of the entrance light on the marble.
+  {
+    const Z = D / 2;                       // the back wall
+    const BAY = { w: 15.2, h: 4.1 };       // the glazed opening
+    const DOORW = 1.3, DOORH = 2.75;       // each leaf
+    const MULL = 0.09;                     // gold mullions between the panes
+    const gold = std(0xcaa268, { roughness: 0.45, metalness: 0.45 });
+    const glass = new THREE.MeshPhysicalMaterial({
+      color: 0xcfe0e6, roughness: 0.05, metalness: 0, transparent: true, opacity: 0.09,
+      transmission: 0, side: THREE.DoubleSide, depthWrite: false,
+    });
+
+    const doorGlass = glass.clone();
+    doorGlass.opacity = 0.14; // the leaves a touch heavier than the fixed panes, so they read as doors
+
+    // the night beyond, a little outside the glass so it reads as depth, not a sticker
+    const night = add(new THREE.PlaneGeometry(BAY.w + 5, BAY.h + 2.4), new THREE.MeshBasicMaterial({ map: T.night, toneMapped: false }), 0, (BAY.h + 2.4) / 2 - 0.5, Z + 1.35);
+    night.rotation.y = Math.PI;
+
+    // the wall around the opening: panelled, like the rest of the room
+    const sideW = (W - BAY.w) / 2;
+    for (const sx of [-1, 1]) {
+      const wall = add(new THREE.PlaneGeometry(sideW, H), M.panel, sx * (BAY.w + sideW) / 2, H / 2, Z);
+      wall.rotation.y = Math.PI;
+    }
+    const header = add(new THREE.PlaneGeometry(BAY.w, H - BAY.h), M.panel, 0, BAY.h + (H - BAY.h) / 2, Z);
+    header.rotation.y = Math.PI;
+
+    // glass: one sheet across the bay, then the frame drawn over it
+    const sheet = add(new THREE.PlaneGeometry(BAY.w, BAY.h), glass, 0, BAY.h / 2, Z - 0.02);
+    sheet.rotation.y = Math.PI;
+
+    const bar = (w, h, x, y, z = Z - 0.06) => boxB(w, h, 0.1, gold, x, y - h / 2, z);
+    bar(BAY.w + 0.2, 0.16, 0, BAY.h + 0.08);                 // head
+    bar(BAY.w + 0.2, 0.14, 0, 0.14);                          // sill
+    bar(BAY.w, 0.12, 0, DOORH + 0.12);                        // transom over the doors
+    for (const sx of [-1, 1]) {
+      bar(MULL, BAY.h, sx * BAY.w / 2, BAY.h);                // jambs
+      bar(MULL, BAY.h, sx * (DOORW + 0.14), BAY.h);           // door jambs, full height
+      for (let i = 1; i <= 3; i++) bar(MULL, BAY.h - DOORH - 0.12, sx * (DOORW + 0.14 + i * 1.72), BAY.h);
+      for (let i = 1; i <= 3; i++) bar(MULL, DOORH, sx * (DOORW + 0.14 + i * 1.72), DOORH + 0.06);
+    }
+
+    // the two leaves, with the long handles the guest pushed on the way in
+    for (const sx of [-1, 1]) {
+      const cx = sx * DOORW / 2;
+      const leaf = add(new THREE.PlaneGeometry(DOORW - 0.06, DOORH - 0.06), doorGlass, cx, DOORH / 2, Z - 0.1);
+      leaf.rotation.y = Math.PI;
+      bar(DOORW, 0.08, cx, DOORH, Z - 0.14);                  // leaf rails
+      bar(DOORW, 0.1, cx, 0.1, Z - 0.14);
+      bar(0.07, DOORH, cx - sx * (DOORW / 2 - 0.035), DOORH, Z - 0.14); // stiles
+      bar(0.07, DOORH, cx + sx * (DOORW / 2 - 0.035), DOORH, Z - 0.14);
+      // handle: a vertical bar on standoffs, inside
+      const handle = std(0xb9bcc2, { roughness: 0.42, metalness: 0.5 });
+      boxB(0.05, 1.15, 0.05, handle, cx - sx * 0.42, 0.95, Z - 0.26);
+      for (const hy of [0.98, 2.02]) boxB(0.04, 0.04, 0.16, handle, cx - sx * 0.42, hy, Z - 0.19);
+    }
+
+    // the entrance light, and the pool of it on the marble just inside the doors
+    const lamp = new THREE.PointLight(0xffd9a6, 15, 16, 1.7);
+    lamp.position.set(0, 3.4, Z - 3.2);
+    scene.add(lamp);
+    const spill = add(new THREE.PlaneGeometry(BAY.w * 0.8, 7), new THREE.MeshBasicMaterial({
+      map: T.wash, transparent: true, opacity: 0.22, depthWrite: false, toneMapped: false,
+    }), 0, 0.015, Z - 3.6);
+    spill.rotation.x = -Math.PI / 2;
+    spill.rotation.z = Math.PI;
+  }
+
   add(new THREE.PlaneGeometry(16, H), M.panel, -2, H / 2, -D / 2);         // wood panel wall ahead
   boxB(4, H, 6, M.backing, 8, 0, -9);                                        // slatted column (right)
 
@@ -902,6 +974,63 @@ function makeTextures() {
       T.mapBoard.needsUpdate = true;
     });
   }
+
+  // Out through the entrance glass: the portico at night, the way the guest saw it on the
+  // walk in — warm light pooling under the canopy, the plaza and the fountain's glow beyond,
+  // and the hotel's own columns standing against it.
+  T.night = canvasTex(1024, 384, (g, w, h) => {
+    const GROUND = h * 0.66;              // where the plaza meets the night
+    const sky = g.createLinearGradient(0, 0, 0, GROUND);
+    sky.addColorStop(0, '#060a16');
+    sky.addColorStop(0.7, '#101a33');
+    sky.addColorStop(1, '#1d2a4a');
+    g.fillStyle = sky; g.fillRect(0, 0, w, GROUND);
+    // the plaza: dark stone at night, with the canopy lights pooling on it near the doors
+    g.fillStyle = '#0e0d14'; g.fillRect(0, GROUND, w, h - GROUND);
+    const floorLit = g.createRadialGradient(w / 2, GROUND + 6, 8, w / 2, GROUND + 6, w * 0.3);
+    floorLit.addColorStop(0, 'rgba(226,176,110,0.42)');
+    floorLit.addColorStop(0.5, 'rgba(226,176,110,0.14)');
+    floorLit.addColorStop(1, 'rgba(226,176,110,0)');
+    g.fillStyle = floorLit; g.fillRect(0, GROUND, w, h - GROUND);
+    // the red carpet running out from the doors
+    g.fillStyle = 'rgba(120,36,40,0.85)';
+    g.beginPath();
+    g.moveTo(w / 2 - 54, h); g.lineTo(w / 2 + 54, h);
+    g.lineTo(w / 2 + 30, GROUND); g.lineTo(w / 2 - 30, GROUND);
+    g.closePath(); g.fill();
+    // the fountain, lit, sitting on the plaza down the carpet
+    const fg = g.createRadialGradient(w / 2, GROUND - 6, 2, w / 2, GROUND - 6, 70);
+    fg.addColorStop(0, 'rgba(255,238,200,0.95)');
+    fg.addColorStop(0.45, 'rgba(255,206,140,0.35)');
+    fg.addColorStop(1, 'rgba(255,206,140,0)');
+    g.fillStyle = fg; g.beginPath(); g.ellipse(w / 2, GROUND - 4, 76, 26, 0, 0, Math.PI * 2); g.fill();
+    // the portico's columns, standing on the plaza, the warm light catching their inner edge
+    for (const cx of [0.13, 0.31, 0.69, 0.87]) {
+      const x = cx * w, foot = h * 0.93;
+      g.fillStyle = '#080b15'; g.fillRect(x - 17, h * 0.06, 34, foot - h * 0.06);
+      g.fillStyle = 'rgba(226,186,122,0.45)';
+      g.fillRect(x + (cx < 0.5 ? 13 : -17), h * 0.1, 4, foot - h * 0.1);
+      g.fillStyle = '#0b1120'; g.fillRect(x - 23, h * 0.06, 46, 12);   // capital
+      g.fillStyle = '#0a0e1a'; g.fillRect(x - 22, foot - 12, 44, 12);  // base
+    }
+    // the canopy edge across the top
+    g.fillStyle = '#060912'; g.fillRect(0, 0, w, h * 0.09);
+    g.fillStyle = 'rgba(226,186,122,0.42)'; g.fillRect(0, h * 0.09, w, 3);
+    // lamps under the canopy, and the city far off
+    const r = rng(7);
+    for (let i = 0; i < 90; i++) {
+      const x = r() * w, y = h * (0.3 + r() * 0.3);
+      g.fillStyle = `rgba(255,${200 + r() * 45 | 0},${140 + r() * 70 | 0},${0.2 + r() * 0.45})`;
+      g.fillRect(x, y, 2, 2);
+    }
+    for (const [lx, ly] of [[0.22, 0.4], [0.78, 0.4]]) {
+      const lg = g.createRadialGradient(lx * w, ly * h, 1, lx * w, ly * h, 34);
+      lg.addColorStop(0, 'rgba(255,232,186,1)');
+      lg.addColorStop(0.3, 'rgba(255,206,140,0.45)');
+      lg.addColorStop(1, 'rgba(255,206,140,0)');
+      g.fillStyle = lg; g.beginPath(); g.arc(lx * w, ly * h, 34, 0, Math.PI * 2); g.fill();
+    }
+  });
 
   T.rug = canvasTex(256, 256, (g, w, h) => {
     const r = rng(9);
