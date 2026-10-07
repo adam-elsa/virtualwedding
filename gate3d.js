@@ -1,10 +1,11 @@
 // Low-poly Golden Boutique Hotel — the opening scene behind the gate.
 // After the doors open, the verse shows on the white flash and the guest lands
-// in the lobby (lobby3d.js).
+// in the lobby (lobby3d.js). The lobby's door leads on into the ballroom (ballroom3d.js).
 // Exposes window.weddingGate = { flyIn(): Promise, dispose() } for script.js.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { createLobby } from './lobby3d.js';
+import { createBallroom, planSvg, SPOTS } from './ballroom3d.js';
 
 const gate = document.getElementById('gate');
 const canvas = document.getElementById('gateCanvas');
@@ -374,6 +375,8 @@ function init() {
   const clamp1 = (v) => Math.max(-1, Math.min(1, v));
   function onPointer(e) {
     if (tilt.active) return;
+    // in the ballroom a drag looks around, so only a hovering mouse sways the view
+    if (state === 'venue' && (e.pointerType !== 'mouse' || e.buttons)) return;
     pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
     pointer.y = (e.clientY / window.innerHeight) * 2 - 1;
   }
@@ -416,6 +419,7 @@ function init() {
   // ---------- animation state ----------
   // intro -> idle -> walk (verse overlaid on the way; doors open, white flash) -> arrive
   // -> lobby (look around, tap photos) -> leave (resolves flyIn's promise)
+  // and from the lobby: toVenue -> venue (the ballroom) -> toLobby -> lobby, or -> leave
   const clock = new THREE.Clock();
   const INTRO = 7; // seconds of slow zoom-in from the left
   const CREEP = 0.25; // then keep strolling forward, closing up to 25% of the distance (never stopping dead)
@@ -482,9 +486,22 @@ function init() {
       stepWalk(performance.now() - walk.start);
     } else if (state === 'arrive') {
       stepArrive(performance.now() - arrive.start);
+    } else if (state === 'toVenue') {
+      stepToVenue(performance.now() - hop.start);
+    } else if (state === 'toLobby') {
+      stepToLobby(performance.now() - hop.start);
+    } else if (state === 'jump') {
+      stepJump(performance.now() - hop.start);
+    }
+    if (fade && flash) {
+      const k = Math.min(1, Math.max(0, (performance.now() - fade.start) / fade.ms));
+      flash.style.opacity = String(THREE.MathUtils.lerp(fade.from, fade.to, k * k * (3 - 2 * k)));
+      if (k >= 1) fade = null;
     }
     if (active === lobby.scene) lobby.update(camera, t, dt, pointer);
+    else if (venue && active === venue.scene) venue.update(camera, t, dt, pointer);
     if (state === 'lobby') tickLobby();
+    else if (state === 'venue') tickVenue();
     renderer.render(active, camera);
   }
 
@@ -538,6 +555,12 @@ function init() {
     setViewShift(0);
     gate.classList.remove('show-ayat', 'show-story');
     renderer.compile(lobby.scene, camera); // warm up shaders while the screen is white
+    // ...and build the ballroom now too, so nothing stutters later when its door opens
+    try {
+      renderer.compile(getVenue().scene, camera);
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   function stepArrive(ms) {
@@ -631,7 +654,8 @@ function init() {
   // rest   -> look around; hover (or on phones, always) shows each group's label
   // couple -> tour: pans Adam (card) -> Elsa (card) -> together (card); a tap skips to the end
   // map    -> map board + card with Google Maps and the Akad/Resepsi times
-  // rsvp   -> desk / door / photo by the door: face the door, RSVP card over it
+  // rsvp   -> the reception desk (and its RSVP button): face the door, RSVP card over it
+  // venue  -> the door ("Masuk Ballroom") or the photo beside it: walk through into the ballroom
   // story  -> tap a photo: zoom into it; the label: overview of the corner (back returns there)
   // couple tour: one continuous pan Adam -> Elsa -> together, lingering on each photo
   // and quicker only between them; the card follows the camera
@@ -697,7 +721,9 @@ function init() {
   }
 
   function openGroup(group, entry) {
-    if (group === 'couple') {
+    if (group === 'venue') {
+      enterVenue();
+    } else if (group === 'couple') {
       setView({ name: 'couple', card: 'groom' });
       lobby.goTour(camera, COUPLE_TOUR, 'caption', 1.8, TOUR_PAN, cardReserve());
       showCard('groom', 1300);
@@ -806,11 +832,12 @@ function init() {
       const cx = Math.min(w - half, Math.max(half, x));
       const edge = x < 0 ? 'left' : x > w ? 'right' : '';
       tag.dataset.edge = edge;
-      // the RSVP button is always there; the other labels appear on hover (always on phones)
-      const show = inFront && view.name === 'rest' && (showAll || group === 'rsvp' || (hovered === group && !edge));
+      // the two buttons (RSVP, Masuk Ballroom) are always there; the labels appear on hover (always on phones)
+      const cta = tag.classList.contains('lobby-tag--cta');
+      const show = inFront && view.name === 'rest' && (showAll || cta || (hovered === group && !edge));
       tag.classList.toggle('is-visible', show);
-      // labels float just above their anchor; the RSVP button is centred on the desk front
-      const lift = group === 'rsvp' ? '-50%' : '-100%';
+      // labels float just above their anchor; the buttons sit on it (the desk front, the door)
+      const lift = cta ? '-50%' : '-100%';
       tag.style.transform = `translate(${cx}px, ${((1 - tmp.y) / 2) * h}px) translate(-50%, ${lift})`;
     }
   }
@@ -827,11 +854,33 @@ function init() {
     return false;
   };
   let downAt = null;
-  canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
+  let dragAt = null; // ballroom: a drag turns the view
+  canvas.addEventListener('pointerdown', (e) => {
+    downAt = [e.clientX, e.clientY];
+    dragAt = state === 'venue' ? [e.clientX, e.clientY] : null;
+    if (dragAt) canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointercancel', () => { downAt = dragAt = null; });
   canvas.addEventListener('pointerup', (e) => {
-    if (state !== 'lobby' || !downAt) return;
+    const dragged = dragAt;
+    dragAt = null;
+    if ((state !== 'lobby' && state !== 'venue') || !downAt) return;
     const moved = Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]);
     downAt = null;
+    if (state === 'venue') {
+      if (dragged && e.pointerType === 'mouse' && !tilt.active) {
+        // the cursor has moved on while the sway held still: take up the difference, so
+        // the view doesn't drift back once the mouse hovers again
+        const nx = (e.clientX / window.innerWidth) * 2 - 1, ny = (e.clientY / window.innerHeight) * 2 - 1;
+        venue.settle(nx - pointer.x, ny - pointer.y);
+        pointer.sx += nx - pointer.x;
+        pointer.sy += ny - pointer.y;
+        pointer.x = nx;
+        pointer.y = ny;
+      }
+      if (moved <= 10) venueGo(venue.pick(camera, ...toNdc(e)));
+      return;
+    }
     if (moved > 10) return;
     const entry = lobby.pick(camera, ...toNdc(e));
     if (clickable(entry)) {
@@ -843,6 +892,15 @@ function init() {
     }
   });
   canvas.addEventListener('pointermove', (e) => {
+    if (state === 'venue') {
+      if (dragAt) {
+        venue.drag(camera, (e.clientX - dragAt[0]) / canvas.clientWidth, (e.clientY - dragAt[1]) / canvas.clientHeight);
+        dragAt = [e.clientX, e.clientY];
+      } else if (e.pointerType === 'mouse') {
+        setHot(venue.pick(camera, ...toNdc(e)));
+      }
+      return;
+    }
     if (state !== 'lobby' || e.pointerType !== 'mouse') return;
     const entry = lobby.pick(camera, ...toNdc(e));
     setHover(clickable(entry) ? entry.group : null);
@@ -863,6 +921,200 @@ function init() {
     walk.resolve();
   });
 
+  // ---------- ballroom (through the lobby's door) ----------
+  // toVenue: face the door, it swings open, step through under a warm flash
+  // venue:   stand at a spot; drag to look around; tap a label, the thing itself or a dot on
+  //          the floor plan to walk there. "← Lobi" (the button, or the door) goes back
+  // toLobby: flash, then step back from the door as it closes
+  const venueUi = document.getElementById('venueUi');
+  const venueTitle = document.getElementById('venueTitle');
+  const venueHint = document.getElementById('venueHint');
+  const venuePlan = document.getElementById('venuePlan');
+  const VENUE_HINT = isTouch
+    ? 'Geser layar untuk melihat sekeliling · ketuk label untuk berjalan ke sana'
+    : 'Tarik untuk melihat sekeliling · klik label untuk berjalan ke sana';
+  const venueTags = []; // { id, tag } for every spot with a label
+  let venue = null;
+  let hop = null;       // the walk between lobby and ballroom under way: { start, ... }
+  let fade = null;      // the flash easing to a new opacity: { from, to, start, ms }
+  let shownSpot = null; // the spot the title currently describes
+  let hotSpot = null;   // the spot under the cursor
+  let planYou = null;   // "you are here" on the floor plan
+
+  function flashTo(to, ms, delay = 0) {
+    fade = { from: Number(flash && flash.style.opacity) || 0, to, start: performance.now() + delay, ms };
+  }
+
+  // built once, the first time it is needed (while the screen is white on the way into the lobby)
+  function getVenue() {
+    if (venue) return venue;
+    venue = createBallroom();
+    if (!venueUi) return venue;
+    for (const [id, spot] of Object.entries(SPOTS)) {
+      if (!spot.tag) continue;
+      const tag = document.createElement('button');
+      tag.type = 'button';
+      tag.className = 'lobby-tag venue-tag';
+      tag.textContent = spot.title;
+      tag.addEventListener('click', () => venueGo(id));
+      venueUi.appendChild(tag);
+      venueTags.push({ id, tag });
+    }
+    if (venuePlan) {
+      // floor plan: a dot on everything you can walk to, and an arrow for where you stand
+      venuePlan.innerHTML = planSvg();
+      const svg = venuePlan.firstElementChild;
+      const el = (name, attrs) => {
+        const node = document.createElementNS('http://www.w3.org/2000/svg', name);
+        for (const [k, val] of Object.entries(attrs)) node.setAttribute(k, val);
+        svg.appendChild(node);
+        return node;
+      };
+      for (const { id } of venueTags) {
+        const [x, , z] = SPOTS[id].tag;
+        const cx = Math.max(-12, x);
+        el('circle', { cx, cy: z, r: 0.75, class: 'plan-dot' });
+        el('circle', { cx, cy: z, r: 2.4, class: 'plan-spot' }).addEventListener('click', () => venueGo(id));
+      }
+      planYou = el('path', { d: 'M0 -1.9 L1.3 1.3 L0 0.6 L-1.3 1.3 Z', class: 'plan-you' });
+    }
+    return venue;
+  }
+
+  function venueGo(id) {
+    if (state !== 'venue' || !id) return;
+    venue.go(id);
+    setHot(null);
+  }
+  function setHot(id) {
+    if (id && id === venue.spot()) id = null; // already there (or on the way)
+    hotSpot = id;
+    canvas.style.cursor = id ? 'pointer' : '';
+  }
+
+  function enterVenue() {
+    if (state !== 'lobby') return;
+    try {
+      getVenue();
+    } catch (err) {
+      console.error(err); // no ballroom: stay in the lobby
+      return;
+    }
+    state = 'toVenue';
+    setView({ name: 'rest' });
+    showCard(null);
+    gate.classList.remove('in-lobby');
+    // the door starts to open just before the camera comes to rest in front of it
+    hop = { start: performance.now(), openAt: lobby.goDoorway(camera, 1.9) * 1000 - 600 };
+  }
+
+  function stepToVenue(ms) {
+    const walkAt = hop.openAt + 800, endAt = walkAt + 1500;
+    lobby.setDoor(easeInOut(Math.min(1, Math.max(0, (ms - hop.openAt) / 1500))));
+    if (ms >= walkAt && !hop.walking) {
+      hop.walking = true;
+      lobby.goThrough(camera, 1.6);
+    }
+    if (flash) flash.style.opacity = String(smooth(walkAt + 450, endAt, ms));
+    if (ms >= endAt) arriveVenue();
+  }
+
+  // under the flash: swap to the ballroom, just inside its door
+  function arriveVenue() {
+    setViewShift(0);
+    active = venue.scene;
+    if (isTouch && !tilt.active) pointer.x = pointer.y = 0; // no leftover sway from the last tap
+    venue.enter(camera);
+    shownSpot = null;
+    state = 'venue';
+    gate.classList.add('in-venue');
+    flashTo(0, 1300, 150);
+  }
+
+  function leaveVenue() {
+    if (state !== 'venue') return;
+    state = 'toLobby';
+    gate.classList.remove('in-venue');
+    setHot(null);
+    hop = { start: performance.now() };
+  }
+
+  function stepToLobby(ms) {
+    if (!hop.back) {
+      if (flash) flash.style.opacity = String(smooth(0, 550, ms));
+      if (ms < 600) return;
+      hop.back = true;
+      active = lobby.scene;
+      lobby.comeBack(camera);
+      lobby.setDoor(1);
+      lobby.goRest(camera, 3.6);
+      return;
+    }
+    if (flash) flash.style.opacity = String(1 - smooth(650, 1700, ms));
+    lobby.setDoor(1 - easeInOut(Math.min(1, Math.max(0, (ms - 1300) / 1500))));
+    if (ms >= 2800) {
+      state = 'lobby';
+      gate.classList.add('in-lobby');
+    }
+  }
+
+  // ?ballroom: straight from the opening screen into the ballroom
+  function stepJump(ms) {
+    if (flash) flash.style.opacity = String(smooth(0, 600, ms));
+    if (ms < 650) return;
+    getVenue();
+    arriveVenue();
+  }
+
+  // called every frame while in the ballroom
+  function tickVenue() {
+    const here = venue.spot(), arrived = venue.arrived();
+    if (arrived && here === 'door') return leaveVenue(); // walked back out
+    if (arrived && here !== shownSpot) {
+      shownSpot = here;
+      if (venueTitle) venueTitle.textContent = SPOTS[here].title;
+      if (venueHint) venueHint.textContent = SPOTS[here].desc || VENUE_HINT;
+    }
+    // float each spot's label over it: nearest first, dropping any that would overlap
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    for (const t of venueTags) {
+      venue.anchor(t.id, tmp);
+      t.dist = tmp.distanceTo(camera.position);
+      tmp.project(camera);
+      t.front = tmp.z < 1;
+      t.x = ((tmp.x + 1) / 2) * w;
+      t.y = ((1 - tmp.y) / 2) * h;
+    }
+    venueTags.sort((a, b) => a.dist - b.dist);
+    const placed = [];
+    for (const t of venueTags) {
+      if (!t.w) t.w = t.tag.offsetWidth;
+      const half = t.w / 2 + 8;
+      const box = [t.x - half, t.y - 46, t.x + half, t.y + 6];
+      // clear of the title at the top and the buttons at the bottom
+      const show = t.front && t.id !== here && box[0] > 0 && box[2] < w && t.y > 150 && t.y < h - 110
+        && !placed.some((p) => box[0] < p[2] && box[2] > p[0] && box[1] < p[3] && box[3] > p[1]);
+      if (show) placed.push(box);
+      t.tag.classList.toggle('is-visible', show);
+      t.tag.classList.toggle('is-hot', show && hotSpot === t.id);
+      t.tag.style.transform = `translate(${t.x}px, ${t.y}px) translate(-50%, -100%)`;
+    }
+    if (planYou) {
+      const at = venue.where();
+      planYou.setAttribute('transform', `translate(${at.x.toFixed(2)} ${at.z.toFixed(2)}) rotate(${(-at.yaw * 180 / Math.PI).toFixed(1)})`);
+    }
+  }
+
+  const venueBack = document.getElementById('venueBack');
+  const venueNext = document.getElementById('venueNext');
+  if (venueBack) venueBack.addEventListener('click', leaveVenue);
+  if (venueNext) venueNext.addEventListener('click', () => {
+    if (state !== 'venue') return;
+    state = 'leave';
+    gate.classList.remove('in-venue');
+    walk.resolve();
+  });
+
   // ---------- public API ----------
   window.weddingGate = {
     // resolves once the guest leaves the lobby for the invitation
@@ -871,6 +1123,11 @@ function init() {
       gate.classList.add('is-flying');
       walk = {};
       walk.promise = new Promise((resolve) => { walk.resolve = resolve; });
+      if (new URLSearchParams(window.location.search).has('ballroom')) {
+        state = 'jump';
+        hop = { start: performance.now() };
+        return walk.promise;
+      }
       const from = camera.position.clone();
       from.y = EYE;
       // route around the left of the fountain and between the portico columns
@@ -903,7 +1160,7 @@ function init() {
       window.removeEventListener('pointermove', onPointer);
       window.removeEventListener('pointerdown', onPointer);
       window.removeEventListener('deviceorientation', onOrient);
-      for (const s of [scene, lobby.scene]) {
+      for (const s of [scene, lobby.scene, ...(venue ? [venue.scene] : [])]) {
         s.traverse((o) => {
           if (o.geometry) o.geometry.dispose();
           if (o.material) {

@@ -14,9 +14,10 @@ const SLAT_H = H - 0.4; // leave a gap at the top for the warm cove light
 //   map     -> "Lokasi & Tempat" (map + Akad/Resepsi times)
 //   story   -> "Cerita Kami": the column + right-wall photos; each zooms in on its own,
 //              the label shows them all together
-//   rsvp    -> RSVP card; the photo by the door joins the reception desk + door (set up below)
+//   rsvp    -> RSVP card: the reception desk (set up below)
+//   venue   -> the door to the ballroom, and the photo beside it: step through (gate3d.js)
 const PHOTOS = [
-  { id: 'venue', group: 'rsvp', src: 'assets/img/04_Venue.jpg', pos: [-9.84, 2.6, -9.6], normal: [1, 0, 0], max: 2.5 },
+  { id: 'venue', group: 'venue', src: 'assets/img/04_Venue.jpg', pos: [-9.84, 2.6, -9.6], normal: [1, 0, 0], max: 2.5 },
   { id: 'adam', group: 'couple', src: 'assets/img/02_ProfileAdam.jpg', pos: [-1.89, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
   { id: 'elsa', group: 'couple', src: 'assets/img/02_ProfileElsa.jpg', pos: [0.63, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
   { id: 'together', group: 'couple', src: 'assets/img/01_Banner.jpg', pos: [3.75, 2.65, -11.94], normal: [0, 0, 1], max: 2.8 },
@@ -151,12 +152,30 @@ export function createLobby() {
     sprite(x, y - 0.05, -10.4, 0.8);
   });
 
-  // ---------- door (front wall, far left) ----------
+  // ---------- door to the ballroom (front wall, far left) ----------
   const doorFrameMat = M.black.clone();
   const doorMat = new THREE.MeshStandardMaterial({ map: T.door, roughness: 0.6 });
   const doorFrame = boxB(DOOR.w, DOOR.h, 0.14, doorFrameMat, DOOR.x, 0, -11.95);
-  const doorLeaf = boxB(DOOR.w - 0.3, DOOR.h - 0.2, 0.1, doorMat, DOOR.x, 0, -11.88);
-  for (const s of [-1, 1]) boxB(0.05, 0.9, 0.08, M.silver, DOOR.x + s * 0.14, 1.1, -11.8);
+  // two leaves hinged at the jambs; they swing out into the lobby, and the ballroom's
+  // warm light shows between them
+  const LEAF_W = (DOOR.w - 0.3) / 2, LEAF_H = DOOR.h - 0.2;
+  add(new THREE.PlaneGeometry(LEAF_W * 2, LEAF_H), new THREE.MeshBasicMaterial({ map: T.doorGlow, toneMapped: false }), DOOR.x, LEAF_H / 2, -11.87);
+  const doorLeaves = [-1, 1].map((s) => {
+    const hinge = new THREE.Group();
+    hinge.position.set(DOOR.x + s * LEAF_W, 0, -11.82);
+    scene.add(hinge);
+    const leaf = boxB(LEAF_W, LEAF_H, 0.06, doorMat, -s * LEAF_W / 2, 0, 0, hinge);
+    boxB(0.05, 0.9, 0.08, M.silver, -s * (LEAF_W - 0.14), 1.1, 0.05, hinge);
+    return { hinge, leaf, s };
+  });
+  const doorLight = new THREE.PointLight(0xffd9a0, 0, 12, 1.5);
+  doorLight.position.set(DOOR.x, 2.2, -10.4);
+  scene.add(doorLight);
+  // 0 = shut, 1 = wide open
+  function setDoor(k) {
+    for (const { hinge, s } of doorLeaves) hinge.rotation.y = s * k * 1.75;
+    doorLight.intensity = 45 * k;
+  }
 
   // ---------- lounge (left wall) ----------
   const rug = add(new THREE.PlaneGeometry(5.2, 7), M.rug, -7.1, 0.01, -2);
@@ -315,13 +334,21 @@ export function createLobby() {
   }
   for (const p of PHOTOS) hang(p);
   hang(MAP_BOARD, T.mapBoard);
-  // reception desk + door (+ the photo by the door): hovering any lights them all, clicking opens the RSVP card
+  // reception desk: clicking it opens the RSVP card
   entries.rsvp = {
     id: 'rsvp', group: 'rsvp',
-    center: new THREE.Vector3(DESK_X - 1.2, 1.9, -10.6), normal: new THREE.Vector3(0, 0, 1),
-    w: 6.2, h: 3.8, glow: [deskMat, doorFrameMat, doorMat],
+    center: new THREE.Vector3(DESK_X, 0.55, -9.2), normal: new THREE.Vector3(0, 0, 1),
+    w: 4.6, h: 1.1, glow: [deskMat],
   };
-  for (const m of [desk, doorFrame, doorLeaf]) { m.userData.entry = entries.rsvp; pickables.push(m); }
+  desk.userData.entry = entries.rsvp;
+  pickables.push(desk);
+  // the door (+ the photo beside it): hovering either lights both, clicking walks into the ballroom
+  entries.door = {
+    id: 'door', group: 'venue',
+    center: new THREE.Vector3(DOOR.x, DOOR.h / 2, -11.9), normal: new THREE.Vector3(0, 0, 1),
+    w: DOOR.w, h: DOOR.h, glow: [doorFrameMat, doorMat],
+  };
+  for (const m of [doorFrame, ...doorLeaves.map((l) => l.leaf)]) { m.userData.entry = entries.door; pickables.push(m); }
   // the kotak angpao opens "Amplop Digital"
   entries.gift = {
     id: 'gift', group: 'gift',
@@ -461,6 +488,13 @@ export function createLobby() {
     raw.q.slerpQuaternions(tour.poses[i].q, tour.poses[i + 1].q, tour.u - i);
   }
 
+  // Facing the ballroom door squarely, far enough back to see all of it.
+  function doorwayPose(camera) {
+    const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const d = Math.max(DOOR.h / 2 / (0.72 * tanV), DOOR.w / 2 / (0.8 * tanV * camera.aspect));
+    return { pos: new THREE.Vector3(DOOR.x, 1.7, -11.9 + Math.min(d, 9)), q: new THREE.Quaternion() };
+  }
+
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
 
@@ -471,6 +505,7 @@ export function createLobby() {
       couple: new THREE.Vector3(0.9, 4.45, -11.8),
       map: new THREE.Vector3(MAP_BOARD.pos[0], 4.2, -11.8),
       rsvp: new THREE.Vector3(DESK_X, 0.55, -8.64), // middle of the desk's black front: gold on black stands out
+      venue: new THREE.Vector3(DOOR.x, 2.75, -11.7), // on the door itself, clear of the other labels on a phone
       story: new THREE.Vector3(8.0, 4.5, -5.7),
       gift: new THREE.Vector3(GIFT.x, 1.55, GIFT.z),
     },
@@ -531,6 +566,39 @@ export function createLobby() {
       return { left: l, right: r, top: t, bottom: b };
     },
     goRest(camera, dur = 1.4) { glide(camera, null, dur); },
+    // Into the ballroom: face its door (returns how long the move takes, in seconds)...
+    goDoorway(camera, dur) {
+      glide(camera, doorwayPose(camera), dur);
+      return cam.dur;
+    },
+    // ...and, once it is open, walk through
+    goThrough(camera, dur) {
+      const to = doorwayPose(camera);
+      to.pos.z = -11.4;
+      glide(camera, to, dur);
+    },
+    setDoor,
+    // Back out of the ballroom: standing just inside the door (the caller then heads for goRest).
+    comeBack(camera) {
+      camera.near = 0.5;
+      camera.far = 70;
+      camera.updateProjectionMatrix();
+      fitCamera(camera);
+      const at = doorwayPose(camera);
+      at.pos.z = -10.6;
+      camera.position.copy(at.pos);
+      camera.quaternion.copy(at.q);
+      raw.pos.copy(at.pos);
+      raw.prev.copy(at.pos);
+      raw.vel.set(0, 0, 0);
+      raw.q.copy(at.q);
+      raw.snap = true;
+      cam.tour = null;
+      cam.fromPos.copy(at.pos);
+      cam.fromQ.copy(at.q);
+      cam.to = at;
+      cam.k = 1;
+    },
     goItem(camera, id, layout, dur, reserve) { glide(camera, poseFor(camera, entries[id], layout, reserve), dur); },
     goStory(camera, dur = 1.8) { glide(camera, storyPose(camera), dur); },
     // Stand at eye level in front of the kotak angpao and look slightly down at it.
@@ -617,7 +685,7 @@ function downscale(img, max) {
   return c;
 }
 
-function canvasTex(w, h, draw, repeat) {
+export function canvasTex(w, h, draw, repeat) {
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
@@ -629,7 +697,7 @@ function canvasTex(w, h, draw, repeat) {
   return t;
 }
 
-function rng(seed) {
+export function rng(seed) {
   return () => {
     seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
     let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
@@ -704,14 +772,21 @@ function makeTextures() {
     for (const x of [0.08, 0.33, 0.62, 0.9]) line(x * w, h * 0.8, x * w, h);
   });
 
-  // double wooden door with grooves and a centre seam
-  T.door = canvasTex(256, 384, (g, w, h) => {
+  // one leaf of the grooved wooden double door
+  T.door = canvasTex(128, 384, (g, w, h) => {
     const grd = g.createLinearGradient(0, 0, 0, h);
     grd.addColorStop(0, '#6b4a2e'); grd.addColorStop(1, '#4e341f');
     g.fillStyle = grd; g.fillRect(0, 0, w, h);
     g.strokeStyle = 'rgba(20,12,6,0.55)'; g.lineWidth = 2;
     for (let x = 16; x < w; x += 16) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
-    g.fillStyle = '#140d07'; g.fillRect(w / 2 - 2, 0, 4, h);
+    g.strokeStyle = '#140d07'; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
+  });
+
+  // the ballroom's light, seen through the doorway as the leaves swing open
+  T.doorGlow = canvasTex(128, 192, (g, w, h) => {
+    const grd = g.createRadialGradient(w / 2, h * 0.42, 0, w / 2, h * 0.42, h * 0.75);
+    grd.addColorStop(0, '#fffdf4'); grd.addColorStop(0.45, '#ffe9bd'); grd.addColorStop(1, '#e3ad5e');
+    g.fillStyle = grd; g.fillRect(0, 0, w, h);
   });
 
   const drawBoard = (g, w, h) => {
@@ -743,7 +818,7 @@ function makeTextures() {
     g.fillStyle = '#d6ae5a'; g.font = '500 34px Jost, sans-serif';
     g.fillText('L O K A S I   &   T E M P A T', w / 2, 60);
     g.fillStyle = '#3a2e22'; g.font = 'italic 40px "Cormorant Garamond", Georgia, serif';
-    g.fillText('Akad 13.00 WIB  ·  Resepsi 16.00 WIB', w / 2, h - 88);
+    g.fillText('Akad 12.30 WIB  ·  Resepsi 16.00 WIB', w / 2, h - 88);
     g.font = '500 24px Jost, sans-serif'; g.fillStyle = '#8a6326';
     g.fillText('SABTU, 24 OKTOBER 2026', w / 2, h - 40);
   };
