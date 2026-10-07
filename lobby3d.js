@@ -16,8 +16,10 @@ const SLAT_H = H - 0.4; // leave a gap at the top for the warm cove light
 //              the label shows them all together
 //   rsvp    -> RSVP card: the reception desk (set up below)
 //   venue   -> the door to the ballroom, and the photo beside it: step through (gate3d.js)
+//   invite  -> the framed 2D invitation on the left wall: opens the invitation page over the venue
 const PHOTOS = [
   { id: 'venue', group: 'venue', src: 'assets/img/04_Venue.jpg', pos: [-9.84, 2.6, -9.6], normal: [1, 0, 0], max: 2.5 },
+  { id: 'invite', group: 'invite', src: 'assets/img/inv/cover.jpg', pos: [-9.84, 2.7, -5.6], normal: [1, 0, 0], max: 2.3, aspect: 0.7 },
   { id: 'adam', group: 'couple', src: 'assets/img/02_ProfileAdam.jpg', pos: [-1.89, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
   { id: 'elsa', group: 'couple', src: 'assets/img/02_ProfileElsa.jpg', pos: [0.63, 2.6, -11.94], normal: [0, 0, 1], max: 2.4 },
   { id: 'together', group: 'couple', src: 'assets/img/01_Banner.jpg', pos: [3.75, 2.65, -11.94], normal: [0, 0, 1], max: 2.8 },
@@ -508,6 +510,7 @@ export function createLobby() {
       venue: new THREE.Vector3(DOOR.x, 2.75, -11.7), // on the door itself, clear of the other labels on a phone
       story: new THREE.Vector3(8.0, 4.5, -5.7),
       gift: new THREE.Vector3(GIFT.x, 1.55, GIFT.z),
+      invite: new THREE.Vector3(-9.7, 4.3, -5.6),
     },
     enter(camera) {
       // the room is ~24 m deep: a tight far plane gives the depth buffer far more precision

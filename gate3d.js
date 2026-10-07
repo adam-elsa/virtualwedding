@@ -427,6 +427,7 @@ function init() {
   const ARRIVE_MS = 1900; // white flash -> lobby
   const STORY_AT = 1300, STORY_MS = 7500; // our story over the lobby as the camera glides in (a tap skips)
   let state = 'intro';
+  let paused = false; // the 2D invitation is covering the venue
   let walk = null;
   let arrive = null;
   let active = scene;
@@ -441,6 +442,7 @@ function init() {
   const tmp = new THREE.Vector3();
 
   function frame() {
+    if (paused) return;
     raf = requestAnimationFrame(frame);
     try {
       step();
@@ -672,7 +674,6 @@ function init() {
   const lobbyUi = document.getElementById('lobbyUi');
   const lobbyHint = document.getElementById('lobbyHint');
   const lobbyBack = document.getElementById('lobbyBack');
-  const lobbyNext = document.getElementById('lobbyNext');
   const card = document.getElementById('lobbyCard');
   const tags = [...document.querySelectorAll('.lobby-tag')];
   if (lobbyHint) {
@@ -749,6 +750,13 @@ function init() {
       card.style.left = `${Math.min(W - r.width / 2 - 16, Math.max(r.width / 2 + 16, at.x * W))}px`;
       card.style.top = `${Math.min(H - r.height / 2 - 90, Math.max(r.height / 2 + 16, at.y * H))}px`;
       showCard('rsvp', 1100);
+    } else if (group === 'invite') {
+      // the framed 2D invitation on the wall: zoom in, then open the page over the venue
+      setView({ name: 'invite' });
+      lobby.goItem(camera, 'invite', 'center', 1.3);
+      showCard(null);
+      clearTimeout(inviteTimer);
+      inviteTimer = setTimeout(openInvite, 1300);
     } else if (group === 'story' && entry) {
       // a single photo: zoom straight into it
       setView({ name: 'photo', parent: view.name === 'story' ? 'story' : 'rest' });
@@ -768,6 +776,20 @@ function init() {
     lobby.goItem(camera, COUPLE_TOUR[COUPLE_TOUR.length - 1], 'caption', 1.4, cardReserve());
     view.card = tourCard(COUPLE_TOUR.length - 1);
     showCard(view.card, 900);
+  }
+
+  let inviteTimer = 0;
+  function openInvite() {
+    if (state !== 'lobby' || view.name !== 'invite') return;
+    if (!window.openInvitationOverlay) return; // no page to show: stay on the framed photo
+    paused = true; // nothing to render while the invitation covers the venue
+    cancelAnimationFrame(raf);
+    window.openInvitationOverlay(() => {
+      paused = false;
+      clock.getDelta(); // drop the time spent reading, so nothing jumps on the first frame
+      frame();
+      back();
+    });
   }
 
   function back() {
@@ -914,12 +936,6 @@ function init() {
     tag.addEventListener('pointerleave', (e) => { if (e.relatedTarget !== canvas && !isTouch) setHover(null); });
   }
   if (lobbyBack) lobbyBack.addEventListener('click', back);
-  if (lobbyNext) lobbyNext.addEventListener('click', () => {
-    if (state !== 'lobby') return;
-    state = 'leave';
-    gate.classList.remove('in-lobby');
-    walk.resolve();
-  });
 
   // ---------- ballroom (through the lobby's door) ----------
   // toVenue: face the door, it swings open, step through under a warm flash
@@ -1106,14 +1122,7 @@ function init() {
   }
 
   const venueBack = document.getElementById('venueBack');
-  const venueNext = document.getElementById('venueNext');
   if (venueBack) venueBack.addEventListener('click', leaveVenue);
-  if (venueNext) venueNext.addEventListener('click', () => {
-    if (state !== 'venue') return;
-    state = 'leave';
-    gate.classList.remove('in-venue');
-    walk.resolve();
-  });
 
   // ---------- public API ----------
   window.weddingGate = {
