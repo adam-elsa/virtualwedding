@@ -335,6 +335,7 @@ a{color:inherit;}
   position:absolute;
   left:24px;
   bottom:max(5vh, env(safe-area-inset-bottom));
+  z-index:2; /* above the canvas, below the thumbstick */
   width:132px;
   padding:6px;
   background:rgba(18,14,11,0.78);
@@ -356,7 +357,8 @@ a{color:inherit;}
 .plan-you{fill:#fff;stroke:#15131a;stroke-width:0.35;}
 /* phones: above the buttons, out of their way */
 @media (max-aspect-ratio:1/1), (max-width:760px){
-  .venue-plan{left:12px;width:88px;bottom:calc(max(5vh, env(safe-area-inset-bottom)) + 74px);}
+  /* the thumbstick sits in the bottom-left corner, so the plan rides above it */
+  .venue-plan{left:12px;width:82px;bottom:calc(max(26px, env(safe-area-inset-bottom)) + 136px);}
   /* two buttons side by side: keep them clear of the music disc in the corner */
   .venue-ui .lobby-bottom{gap:8px;margin-right:52px;}
   .venue-ui .btn-outline{padding:10px 14px;letter-spacing:0.08em;font-size:11px;}
@@ -581,6 +583,66 @@ a{color:inherit;}
 body.invitation-overlay .site-main{position:relative;z-index:65;}
 /* the venue stays mounted underneath, but must not catch taps meant for the invitation */
 body.invitation-overlay .gate{pointer-events:none;}
+
+/* ---- walking around the venue ---- */
+/* thumbstick, bottom-left, thumb's reach on a phone */
+.stick{
+  position:fixed;
+  left:max(22px, env(safe-area-inset-left));
+  bottom:max(26px, env(safe-area-inset-bottom));
+  width:118px;height:118px;
+  z-index:58;
+  border-radius:50%;
+  border:1px solid rgba(226,199,138,0.5);
+  /* the ballroom floor is bright, so the ring needs its own shade to stay readable on it */
+  background:radial-gradient(circle, rgba(24,19,13,0.46), rgba(18,14,10,0.6));
+  box-shadow:0 2px 16px rgba(0,0,0,0.3), inset 0 0 18px rgba(0,0,0,0.25);
+  backdrop-filter:blur(3px);
+  touch-action:none;
+  opacity:0.72;
+  transition:opacity .25s ease;
+}
+.stick[hidden]{display:none;}
+.stick.is-held{opacity:0.95;}
+.stick-knob{
+  position:absolute;
+  left:50%;top:50%;
+  width:50px;height:50px;
+  margin:-25px 0 0 -25px;
+  border-radius:50%;
+  background:radial-gradient(circle at 38% 34%, var(--gold-soft), var(--gold) 62%, #8a6a35);
+  box-shadow:0 4px 14px rgba(0,0,0,0.45);
+  pointer-events:none;
+}
+/* the aim point while the mouse is driving the view, since there is no cursor then */
+.crosshair{
+  position:fixed;
+  left:50%;top:50%;
+  width:18px;height:18px;
+  margin:-9px 0 0 -9px;
+  z-index:58;
+  pointer-events:none;
+  opacity:0.75;
+}
+.crosshair[hidden]{display:none;}
+.crosshair::before, .crosshair::after{
+  content:'';
+  position:absolute;
+  background:rgba(255,255,255,0.85);
+  box-shadow:0 0 4px rgba(0,0,0,0.8);
+}
+.crosshair::before{left:50%;top:0;width:1px;height:100%;margin-left:-0.5px;}
+.crosshair::after{top:50%;left:0;height:1px;width:100%;margin-top:-0.5px;}
+.crosshair.is-on{opacity:1;}
+.crosshair.is-on::before, .crosshair.is-on::after{background:var(--gold-soft);}
+.gate-canvas.is-locked{cursor:none;}
+/* wherever the thumbstick is showing, the floor plan moves up out of its way */
+@media (hover: none), (pointer: coarse){
+  .venue-plan{bottom:calc(max(26px, env(safe-area-inset-bottom)) + 136px);}
+}
+@media (prefers-reduced-motion: reduce){
+  .stick{transition:none;}
+}
 
 /* ============ music toggle ============ */
 /* the template's record button: a 2x2 sprite, play on the left, pause on the right;

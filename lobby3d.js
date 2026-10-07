@@ -5,6 +5,7 @@
 // behind the camera. Ahead: wood panel wall, reception desk, slatted column (right).
 // Left wall: lounge. Photos hang on the front, left and right walls.
 import * as THREE from 'three';
+import { buildBlockers, slide, EYE_H } from './fps.js';
 
 const W = 20, D = 24, H = 5.2;
 const SLAT_H = H - 0.4; // leave a gap at the top for the warm cove light
@@ -381,6 +382,57 @@ export function createLobby() {
   const v0 = new THREE.Vector3(); // velocity carried into a new glide
   const SMOOTH = 0.12; // seconds
 
+  // Walking around on foot. The glides above put the camera on rails for the photo tours;
+  // the moment the guest moves or looks for themselves, `roam.on` takes over and drives
+  // raw.pos/raw.q directly. Because glide() starts from raw, tapping a photo afterwards
+  // picks the camera up wherever they left it.
+  const roam = { on: false, pos: new THREE.Vector3(), yaw: 0, pitch: 0, vx: 0, vz: 0 };
+  const BOUNDS = { x0: -W / 2, x1: W / 2, z0: -D / 2, z1: D / 2 };
+  let blockers = null;
+  const roamEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+
+  // Take the wheel: carry on from exactly where the camera is looking now, so there is
+  // no jump between the tour that was playing and the guest's own first step.
+  function startRoam(camera) {
+    if (roam.on) return;
+    if (!blockers) blockers = buildBlockers(scene, { w: W, d: D });
+    cam.tour = null;
+    roam.pos.copy(raw.pos);
+    roam.pos.y = EYE_H;
+    roamEuler.setFromQuaternion(raw.q, 'YXZ');
+    roam.yaw = roamEuler.y;
+    roam.pitch = THREE.MathUtils.clamp(roamEuler.x, -0.62, 0.62);
+    roam.vx = roam.vz = 0;
+    roam.on = true;
+  }
+
+  // Hand back to the rails (a photo was tapped): the glide reads raw, which roam has
+  // been writing, so it simply continues from here.
+  function stopRoam() {
+    roam.on = false;
+    raw.prev.copy(raw.pos);
+    raw.vel.set(0, 0, 0);
+  }
+
+  function stepRoam(dt, controls) {
+    if (!controls) return;
+    const look = controls.takeLook();
+    roam.yaw += look.yaw;
+    roam.pitch = controls.clampPitch(roam.pitch + look.pitch);
+    const { x, y, speed } = controls.axes();
+    // ease into the walk and out of it, so starting and stopping is not a jolt
+    const sin = Math.sin(roam.yaw), cos = Math.cos(roam.yaw);
+    const wantX = (x * cos - y * sin) * speed;
+    const wantZ = (-x * sin - y * cos) * speed;
+    const k = 1 - Math.exp(-dt * 9);
+    roam.vx += (wantX - roam.vx) * k;
+    roam.vz += (wantZ - roam.vz) * k;
+    if (Math.abs(roam.vx) > 1e-4 || Math.abs(roam.vz) > 1e-4) {
+      slide(roam.pos, roam.vx * dt, roam.vz * dt, blockers, BOUNDS);
+      roam.pos.y = EYE_H;
+    }
+  }
+
   function fitCamera(camera) {
     const portrait = camera.aspect < 1;
     const fov = portrait ? 62 : 55;
@@ -390,6 +442,7 @@ export function createLobby() {
   }
 
   function glide(camera, to, dur) {
+    stopRoam();
     cam.tour = null;
     // start from where the camera was heading (not its lagging on-screen pose)
     cam.fromPos.copy(raw.pos);
@@ -527,8 +580,21 @@ export function createLobby() {
       raw.snap = true;
       glide(camera, null, 3.5);
     },
-    update(camera, t, dt, pointer) {
+    update(camera, t, dt, pointer, controls) {
       fitCamera(camera);
+      if (roam.on) {
+        stepRoam(dt, controls);
+        const a = raw.snap ? 1 : 1 - Math.exp(-dt / SMOOTH);
+        raw.snap = false;
+        raw.pos.copy(roam.pos);
+        raw.prev.copy(roam.pos);
+        raw.vel.set(0, 0, 0);
+        roamEuler.set(roam.pitch, roam.yaw, 0);
+        raw.q.setFromEuler(roamEuler);
+        camera.position.lerp(raw.pos, a);
+        camera.quaternion.slerp(raw.q, a);
+        return;
+      }
       cam.euler.set(0.03 - pointer.sy * 0.2, Math.sin(t * 0.15) * 0.03 - pointer.sx * 0.65, 0);
       cam.restQ.setFromEuler(cam.euler);
       cam.k = Math.min(1, cam.k + dt / cam.dur);
@@ -569,6 +635,10 @@ export function createLobby() {
       return { left: l, right: r, top: t, bottom: b };
     },
     goRest(camera, dur = 1.4) { glide(camera, null, dur); },
+    roam(camera) { startRoam(camera); },
+    roaming() { return roam.on; },
+    // where the guest is standing and facing, for the walk through to the ballroom
+    where() { return { x: roam.pos.x, z: roam.pos.z, yaw: roam.yaw }; },
     // Into the ballroom: face its door (returns how long the move takes, in seconds)...
     goDoorway(camera, dur) {
       glide(camera, doorwayPose(camera), dur);

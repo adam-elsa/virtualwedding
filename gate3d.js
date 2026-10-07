@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { createLobby } from './lobby3d.js';
 import { createBallroom, planSvg, SPOTS } from './ballroom3d.js';
+import { createControls } from './fps.js';
 
 const gate = document.getElementById('gate');
 const canvas = document.getElementById('gateCanvas');
@@ -399,6 +400,9 @@ function init() {
   window.addEventListener('pointerdown', onPointer, { passive: true });
 
   const isTouch = window.matchMedia('(pointer: coarse)').matches;
+  // walking around the lobby and the ballroom: thumbstick + drag on phones, WASD + mouse on computers
+  const controls = createControls(canvas, document.getElementById('stick'));
+  const crosshair = document.getElementById('crosshair');
   const hint = document.getElementById('motionHint');
   if (isTouch && typeof DeviceOrientationEvent !== 'undefined') {
     window.addEventListener('deviceorientation', onOrient);
@@ -500,8 +504,20 @@ function init() {
       flash.style.opacity = String(THREE.MathUtils.lerp(fade.from, fade.to, k * k * (3 - 2 * k)));
       if (k >= 1) fade = null;
     }
-    if (active === lobby.scene) lobby.update(camera, t, dt, pointer);
-    else if (venue && active === venue.scene) venue.update(camera, t, dt, pointer);
+    const driving = state === 'lobby' || state === 'venue';
+    if (driving && controls.took()) takeWheel();
+    if (crosshair) {
+      const aiming = driving && controls.locked();
+      crosshair.hidden = !aiming;
+      if (aiming) {
+        const at = state === 'venue' ? venue.pick(camera, 0, 0) : lobby.pick(camera, 0, 0);
+        if (state === 'venue') setHot(at);
+        else setHover(clickable(at) ? at.group : null);
+        crosshair.classList.toggle('is-on', !!at);
+      }
+    }
+    if (active === lobby.scene) lobby.update(camera, t, dt, pointer, state === 'lobby' ? controls : null);
+    else if (venue && active === venue.scene) venue.update(camera, t, dt, pointer, state === 'venue' ? controls : null);
     if (state === 'lobby') tickLobby();
     else if (state === 'venue') tickVenue();
     renderer.render(active, camera);
@@ -593,6 +609,7 @@ function init() {
       // the lobby (and its RSVP button) fades in under the line; once it's up, the line shrinks away
       state = 'lobby';
       gate.classList.add('in-lobby');
+      controls.start(isTouch);
       setTimeout(shrinkStoryIntoRsvp, 700);
     }
   }
@@ -644,6 +661,16 @@ function init() {
     }, 550);
   }
 
+  // The guest moved or looked for themselves: the lobby's rails give way to walking, any
+  // open card closes, and on a computer the pointer locks so the mouse turns the view.
+  function takeWheel() {
+    if (state === 'lobby') {
+      if (view.name !== 'rest') { setView({ name: 'rest' }); showCard(null); }
+      lobby.roam(camera);
+    }
+    if (!isTouch && !controls.locked()) controls.lock();
+  }
+
   // tap while the story is up to move on sooner
   gate.addEventListener('pointerdown', () => {
     if (state !== 'arrive') return;
@@ -678,8 +705,8 @@ function init() {
   const tags = [...document.querySelectorAll('.lobby-tag')];
   if (lobbyHint) {
     lobbyHint.textContent = isTouch
-      ? 'Miringkan ponsel untuk melihat sekeliling · ketuk foto untuk membuka'
-      : 'Arahkan kursor ke foto · klik untuk membuka';
+      ? 'Gunakan tuas untuk berjalan · geser layar untuk melihat · ketuk foto untuk membuka'
+      : 'WASD untuk berjalan · gerakkan mouse untuk melihat · klik foto untuk membuka';
   }
 
   let view = { name: 'rest' };
@@ -782,10 +809,12 @@ function init() {
   function openInvite() {
     if (state !== 'lobby' || view.name !== 'invite') return;
     if (!window.openInvitationOverlay) return; // no page to show: stay on the framed photo
+    controls.stop();
     paused = true; // nothing to render while the invitation covers the venue
     cancelAnimationFrame(raf);
     window.openInvitationOverlay(() => {
       paused = false;
+      controls.start(isTouch);
       clock.getDelta(); // drop the time spent reading, so nothing jumps on the first frame
       frame();
       back();
@@ -865,6 +894,7 @@ function init() {
   }
 
   const toNdc = (e) => {
+    if (controls.locked()) return [0, 0]; // mouse look: the crosshair is the cursor
     const r = canvas.getBoundingClientRect();
     return [((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1];
   };
@@ -876,34 +906,19 @@ function init() {
     return false;
   };
   let downAt = null;
-  let dragAt = null; // ballroom: a drag turns the view
-  canvas.addEventListener('pointerdown', (e) => {
-    downAt = [e.clientX, e.clientY];
-    dragAt = state === 'venue' ? [e.clientX, e.clientY] : null;
-    if (dragAt) canvas.setPointerCapture(e.pointerId);
-  });
-  canvas.addEventListener('pointercancel', () => { downAt = dragAt = null; });
+  canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
+  canvas.addEventListener('pointercancel', () => { downAt = null; });
   canvas.addEventListener('pointerup', (e) => {
-    const dragged = dragAt;
-    dragAt = null;
     if ((state !== 'lobby' && state !== 'venue') || !downAt) return;
     const moved = Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]);
     downAt = null;
+    // a drag that turned the view is not a tap on anything (the controls count the travel)
+    const turned = !controls.locked() && (moved > 10 || controls.dragged() > 10);
     if (state === 'venue') {
-      if (dragged && e.pointerType === 'mouse' && !tilt.active) {
-        // the cursor has moved on while the sway held still: take up the difference, so
-        // the view doesn't drift back once the mouse hovers again
-        const nx = (e.clientX / window.innerWidth) * 2 - 1, ny = (e.clientY / window.innerHeight) * 2 - 1;
-        venue.settle(nx - pointer.x, ny - pointer.y);
-        pointer.sx += nx - pointer.x;
-        pointer.sy += ny - pointer.y;
-        pointer.x = nx;
-        pointer.y = ny;
-      }
-      if (moved <= 10) venueGo(venue.pick(camera, ...toNdc(e)));
+      if (!turned) venueGo(venue.pick(camera, ...toNdc(e)));
       return;
     }
-    if (moved > 10) return;
+    if (turned) return;
     const entry = lobby.pick(camera, ...toNdc(e));
     if (clickable(entry)) {
       openGroup(entry.group, entry);
@@ -915,12 +930,7 @@ function init() {
   });
   canvas.addEventListener('pointermove', (e) => {
     if (state === 'venue') {
-      if (dragAt) {
-        venue.drag(camera, (e.clientX - dragAt[0]) / canvas.clientWidth, (e.clientY - dragAt[1]) / canvas.clientHeight);
-        dragAt = [e.clientX, e.clientY];
-      } else if (e.pointerType === 'mouse') {
-        setHot(venue.pick(camera, ...toNdc(e)));
-      }
+      if (e.pointerType === 'mouse') setHot(venue.pick(camera, ...toNdc(e)));
       return;
     }
     if (state !== 'lobby' || e.pointerType !== 'mouse') return;
@@ -947,8 +957,8 @@ function init() {
   const venueHint = document.getElementById('venueHint');
   const venuePlan = document.getElementById('venuePlan');
   const VENUE_HINT = isTouch
-    ? 'Geser layar untuk melihat sekeliling · ketuk label untuk berjalan ke sana'
-    : 'Tarik untuk melihat sekeliling · klik label untuk berjalan ke sana';
+    ? 'Gunakan tuas untuk berjalan · geser layar untuk melihat · ketuk label untuk ke sana'
+    : 'WASD untuk berjalan · gerakkan mouse untuk melihat · klik label untuk ke sana';
   const venueTags = []; // { id, tag } for every spot with a label
   let venue = null;
   let hop = null;       // the walk between lobby and ballroom under way: { start, ... }
@@ -1017,6 +1027,7 @@ function init() {
       return;
     }
     state = 'toVenue';
+    controls.stop();
     setView({ name: 'rest' });
     showCard(null);
     gate.classList.remove('in-lobby');
@@ -1043,6 +1054,7 @@ function init() {
     venue.enter(camera);
     shownSpot = null;
     state = 'venue';
+    controls.start(isTouch);
     gate.classList.add('in-venue');
     flashTo(0, 1300, 150);
   }
@@ -1050,6 +1062,7 @@ function init() {
   function leaveVenue() {
     if (state !== 'venue') return;
     state = 'toLobby';
+    controls.stop();
     gate.classList.remove('in-venue');
     setHot(null);
     hop = { start: performance.now() };
@@ -1071,6 +1084,7 @@ function init() {
     if (ms >= 2800) {
       state = 'lobby';
       gate.classList.add('in-lobby');
+      controls.start(isTouch);
     }
   }
 
@@ -1088,8 +1102,9 @@ function init() {
     if (arrived && here === 'door') return leaveVenue(); // walked back out
     if (arrived && here !== shownSpot) {
       shownSpot = here;
-      if (venueTitle) venueTitle.textContent = SPOTS[here].title;
-      if (venueHint) venueHint.textContent = SPOTS[here].desc || VENUE_HINT;
+      // walking around freely, between the named spots: the room's own name instead
+      if (venueTitle) venueTitle.textContent = here ? SPOTS[here].title : 'Golden Ballroom';
+      if (venueHint) venueHint.textContent = (here && SPOTS[here].desc) || VENUE_HINT;
     }
     // float each spot's label over it: nearest first, dropping any that would overlap
     const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -1165,6 +1180,7 @@ function init() {
     },
     dispose() {
       cancelAnimationFrame(raf);
+      controls.dispose();
       window.removeEventListener('resize', fit);
       window.removeEventListener('pointermove', onPointer);
       window.removeEventListener('pointerdown', onPointer);
