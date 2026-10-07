@@ -556,6 +556,32 @@ a{color:inherit;}
   50%{transform:scale(1.04);}
 }
 
+/* the 2D invitation opened from its frame in the lobby: it covers the venue, which keeps
+   its place underneath, and this button puts the guest back where they were standing */
+.invite-close{
+  position:fixed;
+  top:14px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:70;
+  font-family:var(--font-sans);
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  font-size:11px;
+  padding:10px 20px;
+  border-radius:999px;
+  border:1px solid var(--gold);
+  background:rgba(21,19,26,0.8);
+  backdrop-filter:blur(6px);
+  color:var(--gold-soft);
+  cursor:pointer;
+}
+.invite-close[hidden]{display:none;}
+.invite-close span{font-size:14px;margin-right:4px;}
+body.invitation-overlay .site-main{position:relative;z-index:65;}
+/* the venue stays mounted underneath, but must not catch taps meant for the invitation */
+body.invitation-overlay .gate{pointer-events:none;}
+
 /* ============ music toggle ============ */
 /* the template's record button: a 2x2 sprite, play on the left, pause on the right;
    the disc spins while the music plays */

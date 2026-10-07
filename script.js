@@ -77,6 +77,31 @@
     Promise.resolve(scene3d ? scene3d.flyIn() : null).then(revealSite, revealSite);
   }
 
+  // Opened from the framed invitation on the lobby wall (gate3d.js). The venue stays mounted
+  // and paused behind it; closing puts the guest back exactly where they were standing.
+  const inviteClose = document.getElementById('inviteClose');
+  let onOverlayClose = null;
+  window.openInvitationOverlay = function (onClose) {
+    onOverlayClose = onClose || null;
+    siteMain.hidden = false;
+    document.body.classList.add('invitation-overlay');
+    inviteClose.hidden = false;
+    fitGuestName();
+    document.body.style.overflow = '';
+    window.scrollTo(0, 0);
+    initReveal();
+  };
+  inviteClose.addEventListener('click', () => {
+    document.body.classList.remove('invitation-overlay');
+    siteMain.hidden = true;
+    inviteClose.hidden = true;
+    document.body.style.overflow = 'hidden';
+    window.scrollTo(0, 0);
+    const back = onOverlayClose;
+    onOverlayClose = null;
+    if (back) back();
+  });
+
   function revealSite() {
     gate.classList.add('gate-hidden');
     siteMain.hidden = false;
