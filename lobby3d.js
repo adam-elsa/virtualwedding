@@ -818,7 +818,7 @@ function makeTextures() {
     g.fillStyle = '#d6ae5a'; g.font = '500 34px Jost, sans-serif';
     g.fillText('L O K A S I   &   T E M P A T', w / 2, 60);
     g.fillStyle = '#3a2e22'; g.font = 'italic 40px "Cormorant Garamond", Georgia, serif';
-    g.fillText('Akad 13.00 WIB  ·  Resepsi 16.00 WIB', w / 2, h - 88);
+    g.fillText('Akad 12.30 WIB  ·  Resepsi 16.00 WIB', w / 2, h - 88);
     g.font = '500 24px Jost, sans-serif'; g.fillStyle = '#8a6326';
     g.fillText('SABTU, 24 OKTOBER 2026', w / 2, h - 40);
   };
