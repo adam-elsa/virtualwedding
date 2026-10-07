@@ -117,6 +117,7 @@ a{color:inherit;}
 }
 .gate.is-flying .gate-scrim::before{opacity:0;}
 .gate.is-flying .gate-scrim::after{opacity:1;}
+.gate.in-venue .gate-scrim::after{opacity:0.4;} /* the ballroom is bright: shade it less... */
 .gate-flash{
   position:absolute;
   inset:0;
@@ -232,8 +233,8 @@ a{color:inherit;}
   .ayat-ornament{text-shadow:var(--text-halo);}
 }
 
-/* lobby overlay */
-.lobby-ui{
+/* lobby overlay, and the ballroom's */
+.lobby-ui, .venue-ui{
   position:absolute;
   inset:0;
   z-index:2;
@@ -248,8 +249,8 @@ a{color:inherit;}
   visibility:hidden;
   transition:opacity .9s ease, visibility .9s ease;
 }
-.gate.in-lobby .lobby-ui{opacity:1;visibility:visible;}
-.lobby-ui button{pointer-events:auto;}
+.gate.in-lobby .lobby-ui, .gate.in-venue .venue-ui{opacity:1;visibility:visible;}
+.lobby-ui button, .venue-ui button{pointer-events:auto;}
 .lobby-title{
   font-family:var(--font-display);
   font-weight:500;
@@ -273,7 +274,7 @@ a{color:inherit;}
 .lobby-back{display:none;}
 .lobby-ui.is-focused .lobby-back{display:inline-block;}
 .lobby-ui.is-focused .lobby-next, .lobby-ui.is-focused .lobby-top{display:none;}
-.lobby-ui .btn-outline{background:rgba(21,19,26,0.55);backdrop-filter:blur(4px);}
+.lobby-ui .btn-outline, .venue-ui .btn-outline{background:rgba(21,19,26,0.55);backdrop-filter:blur(4px);}
 /* wide screens: with a card open, "Kembali" sits under the card, off the photo */
 @media (min-aspect-ratio:1/1) and (min-width:761px){
   .lobby-ui.has-card .lobby-bottom{align-self:flex-end;width:min(380px,36vw);margin-right:6vw;justify-content:center;}
@@ -314,6 +315,51 @@ a{color:inherit;}
   padding:10px 22px;
   margin-top:0;
   box-shadow:0 8px 22px rgba(203,161,92,0.35);
+}
+
+/* ...and put its title on a dark plaque instead, so it reads against the cream ceiling */
+.venue-ui .lobby-top{
+  padding:12px 22px 14px;
+  background:rgba(18,14,11,0.72);
+  border:1px solid var(--line);
+  border-radius:16px;
+  backdrop-filter:blur(6px);
+  max-width:min(520px,100%);
+}
+.venue-ui .lobby-top .eyebrow{margin-bottom:4px;}
+.venue-ui .lobby-title{font-size:clamp(26px,6vw,36px);margin:2px 0 4px;}
+/* ballroom: the label under the cursor, and the little floor plan */
+.gate-canvas{touch-action:none;} /* a drag turns the view there */
+.venue-tag.is-hot{color:#211a10;background:linear-gradient(135deg,var(--gold-soft),var(--gold));}
+.venue-plan{
+  position:absolute;
+  left:24px;
+  bottom:max(5vh, env(safe-area-inset-bottom));
+  width:132px;
+  padding:6px;
+  background:rgba(18,14,11,0.78);
+  border:1px solid var(--line);
+  border-radius:10px;
+  backdrop-filter:blur(4px);
+  pointer-events:auto;
+}
+.venue-plan svg{display:block;width:100%;height:auto;overflow:visible;}
+.plan-room{fill:#1c2343;stroke:rgba(203,161,92,0.6);stroke-width:0.3;}
+.plan-aisle{fill:#f2ece1;}
+.plan-stage{fill:var(--gold-soft);}
+.plan-item{fill:rgba(242,236,225,0.5);}
+.plan-soft{fill:rgba(242,236,225,0.2);}
+.plan-flower{fill:#e7a4ae;}
+.plan-rope{fill:none;stroke:var(--gold);stroke-width:0.25;stroke-dasharray:0.8 0.6;}
+.plan-dot{fill:var(--gold);stroke:#15131a;stroke-width:0.3;}
+.plan-spot{fill:transparent;cursor:pointer;}
+.plan-you{fill:#fff;stroke:#15131a;stroke-width:0.35;}
+/* phones: above the buttons, out of their way */
+@media (max-aspect-ratio:1/1), (max-width:760px){
+  .venue-plan{left:12px;width:88px;bottom:calc(max(5vh, env(safe-area-inset-bottom)) + 74px);}
+  /* two buttons side by side: keep them clear of the music disc in the corner */
+  .venue-ui .lobby-bottom{gap:8px;margin-right:52px;}
+  .venue-ui .btn-outline{padding:10px 14px;letter-spacing:0.08em;font-size:11px;}
 }
 
 /* info card: beside the photo on wide screens, below it on phones */

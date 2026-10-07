@@ -62,6 +62,8 @@
     <button class="lobby-tag" data-group="couple" type="button">Kedua Mempelai</button>
     <button class="lobby-tag" data-group="map" type="button">Lokasi &amp; Tempat</button>
     <button class="lobby-tag lobby-tag--cta" data-group="rsvp" type="button">RSVP</button>
+    <!-- on the door: walks through into the ballroom -->
+    <button class="lobby-tag lobby-tag--cta" data-group="venue" type="button">Masuk Ballroom</button>
     <button class="lobby-tag" data-group="story" type="button">Cerita Kami</button>
     <button class="lobby-tag" data-group="gift" type="button">Amplop Digital</button>
     <!-- info card beside the photo being viewed; data-show picks the section -->
@@ -127,6 +129,24 @@
       <button class="btn-outline lobby-back" id="lobbyBack" type="button">← Kembali</button>
       <!-- leaves the lobby for the invitation page below -->
       <button class="btn-outline lobby-next" id="lobbyNext" type="button">
+        Lanjut ke Undangan
+        <small>(halaman undangan lengkap)</small>
+      </button>
+    </div>
+  </div>
+  <!-- inside the ballroom (ballroom3d.js): drag to look around, tap a label to walk there.
+       gate3d.js adds the floating labels and draws the floor plan -->
+  <div class="venue-ui" id="venueUi">
+    <div class="lobby-top">
+      <p class="eyebrow">Golden Ballroom</p>
+      <h2 class="lobby-title" id="venueTitle">Hari Bahagia Kami</h2>
+      <p class="lobby-hint" id="venueHint"></p>
+    </div>
+    <div class="venue-plan" id="venuePlan"></div>
+    <div class="lobby-bottom">
+      <button class="btn-outline" id="venueBack" type="button">← Lobi</button>
+      <!-- leaves for the invitation page below -->
+      <button class="btn-outline lobby-next" id="venueNext" type="button">
         Lanjut ke Undangan
         <small>(halaman undangan lengkap)</small>
       </button>
