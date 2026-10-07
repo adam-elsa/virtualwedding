@@ -16,6 +16,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { canvasTex, rng } from './lobby3d.js';
+import { buildBlockers, slide } from './fps.js';
 
 const W = 26, D = 36, H = 5.4;
 const EYE = 1.65;
@@ -709,6 +710,13 @@ export function createBallroom() {
     lookYaw: 0, lookPitch: 0,     // the guest's own look-around (drag), on top of where the walk faces them
     camYaw: 0, camPitch: 0, snap: true,
   };
+  // Walking under their own steam, alongside the path graph: the graph still runs the
+  // walk when a label or a floor-plan dot is tapped, and the guest's own first step
+  // cancels it and takes over from wherever they had got to.
+  const roam = { vx: 0, vz: 0 };
+  const BOUNDS = { x0: -W / 2, x1: W / 2, z0: -D / 2, z1: D / 2 };
+  let blockers = null;
+
   const ease = (t) => t * t * t * (t * (t * 6 - 15) + 10);
   const smooth = (a, b, t) => { const x = Math.min(1, Math.max(0, (t - a) / (b - a))); return x * x * (3 - 2 * x); };
   const turn = (a, b, t) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * t; // the short way round
@@ -740,11 +748,40 @@ export function createBallroom() {
     while (path[0] !== from) path.unshift(prev[path[0]]);
     return path;
   }
+  function stepRoam(dt, controls) {
+    const look = controls.takeLook();
+    if (look.yaw || look.pitch) {
+      nav.lookYaw += look.yaw;
+      nav.lookPitch = controls.clampPitch(nav.lookPitch + look.pitch);
+    }
+    const { x, y, speed } = controls.axes();
+    const moving = x || y;
+    if (moving && nav.walk) {
+      // taking over mid-walk: stop where we are, keeping the view we have
+      nav.walk = null;
+      nav.yaw = nav.camYaw - nav.lookYaw;
+      nav.pitch = nav.camPitch - nav.lookPitch;
+    }
+    const k = 1 - Math.exp(-dt * 9);
+    const yaw = nav.yaw + nav.lookYaw;
+    const sin = Math.sin(yaw), cos = Math.cos(yaw);
+    const wantX = moving ? (x * cos - y * sin) * speed : 0;
+    const wantZ = moving ? (-x * sin - y * cos) * speed : 0;
+    roam.vx += (wantX - roam.vx) * k;
+    roam.vz += (wantZ - roam.vz) * k;
+    if (nav.walk || (Math.abs(roam.vx) < 1e-4 && Math.abs(roam.vz) < 1e-4)) return;
+    if (!blockers) blockers = buildBlockers(scene, { w: W, d: D });
+    slide(nav.pos, roam.vx * dt, roam.vz * dt, blockers, BOUNDS);
+    nav.pos.y = EYE;
+    nav.spot = null; // wandering: no longer standing at a named spot
+  }
+
   function go(id, stroll) {
     if (!nodes[id] || !SPOTS[id]) return;
     if (!nav.walk && nav.spot === id) { nav.lookYaw = nav.lookPitch = 0; return; } // already here: face it again
+    roam.vx = roam.vz = 0; // the graph is driving again
     let from = nav.spot;
-    if (nav.walk) {
+    if (nav.walk || !from || !nodes[from]) {
       // changing course mid-walk: carry on from the nearest point of the graph
       from = Object.keys(nodes).reduce((best, n) => (nodeAt(n, v).distanceTo(nav.pos) < nodeAt(best, dir).distanceTo(nav.pos) ? n : best));
     }
@@ -816,8 +853,9 @@ export function createBallroom() {
       nav.snap = true;
       go('south', true);
     },
-    update(camera, t, dt, pointer) {
+    update(camera, t, dt, pointer, controls) {
       fit(camera);
+      if (controls) stepRoam(dt, controls);
       if (nav.walk) stepWalk(dt);
       const still = nav.walk ? 0.4 : 1; // sway less while walking
       const yaw = nav.yaw + nav.lookYaw - pointer.sx * SWAY.yaw * still + Math.sin(t * 0.15) * 0.02;
