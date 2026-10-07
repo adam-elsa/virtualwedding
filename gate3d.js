@@ -1160,13 +1160,20 @@ function init() {
       window.removeEventListener('pointermove', onPointer);
       window.removeEventListener('pointerdown', onPointer);
       window.removeEventListener('deviceorientation', onOrient);
+      // some meshes carry an array of materials (the ballroom's cloth-covered tables use one
+      // per cylinder face), so dispose each material rather than the array itself
+      const freeMaterial = (m) => {
+        for (const k of ['map', 'emissiveMap', 'alphaMap', 'bumpMap', 'normalMap']) {
+          if (m[k] && m[k].dispose) m[k].dispose();
+        }
+        m.dispose();
+      };
       for (const s of [scene, lobby.scene, ...(venue ? [venue.scene] : [])]) {
         s.traverse((o) => {
           if (o.geometry) o.geometry.dispose();
-          if (o.material) {
-            if (o.material.map) o.material.map.dispose();
-            o.material.dispose();
-          }
+          if (!o.material) return;
+          if (Array.isArray(o.material)) o.material.forEach(freeMaterial);
+          else freeMaterial(o.material);
         });
       }
       envMap.dispose();

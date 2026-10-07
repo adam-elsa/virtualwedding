@@ -5,11 +5,14 @@ Akad 12.30 WIB · Resepsi 16.00 WIB.
 
 Plain HTML/CSS/JS, no build step. See [PLAN.md](PLAN.md) for design decisions.
 
-**Live site:** https://adamvirtualspace-lab.github.io/adamelsaweddingsite/ (GitHub Pages, deployed from `main`)
+**Live site:** https://adam-elsa.github.io/virtualwedding/ (GitHub Pages, deployed from `main` by [.github/workflows/deploy.yml](.github/workflows/deploy.yml))
 
-- With a guest's name: https://adamvirtualspace-lab.github.io/adamelsaweddingsite/?to=Nama+Tamu
-- Without the 3D opener (2D cover instead): https://adamvirtualspace-lab.github.io/adamelsaweddingsite/?to=Nama+Tamu&simple
-- Straight into the ballroom: https://adamvirtualspace-lab.github.io/adamelsaweddingsite/?to=Nama+Tamu&ballroom
+- With a guest's name: https://adam-elsa.github.io/virtualwedding/?to=Nama+Tamu
+- Without the 3D opener (2D cover instead): https://adam-elsa.github.io/virtualwedding/?to=Nama+Tamu&simple
+- Straight into the ballroom: https://adam-elsa.github.io/virtualwedding/?to=Nama+Tamu&ballroom
+
+This repository is the **virtual event**. The invitation for the live event lives separately at
+[adamvirtualspace-lab/adamelsaweddingsite](https://adamvirtualspace-lab.github.io/adamelsaweddingsite/).
 
 The opening screen is a low-poly 3D model of the Golden Boutique Hotel ([gate3d.js](gate3d.js), Three.js loaded from jsDelivr). The opening text (names, guest, "Buka Undangan") sits at the top of the screen with the hotel below it.
 

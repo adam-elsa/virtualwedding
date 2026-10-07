@@ -84,7 +84,13 @@
     document.body.style.overflow = '';
     window.scrollTo(0, 0);
     setTimeout(() => {
-      if (window.weddingGate) window.weddingGate.dispose();
+      // the gate has to go even if tearing the 3D scenes down trips over something,
+      // or its canvas and WebGL context sit behind the invitation for the whole visit
+      try {
+        if (window.weddingGate) window.weddingGate.dispose();
+      } catch (err) {
+        console.error(err);
+      }
       gate.remove();
     }, 900);
     initReveal();
