@@ -584,6 +584,145 @@ body.invitation-overlay .site-main{position:relative;z-index:65;}
 /* the venue stays mounted underneath, but must not catch taps meant for the invitation */
 body.invitation-overlay .gate{pointer-events:none;}
 
+/* ---- how to get about: shown on arriving, gone on the first move ---- */
+.coach{
+  position:fixed;
+  inset:0;
+  z-index:57;
+  pointer-events:none;
+  color:var(--gold-soft);
+  transition:opacity .5s ease;
+}
+.coach[hidden]{display:none;}
+.coach.is-going{opacity:0;}
+.coach-move, .coach-look{
+  position:absolute;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  text-align:center;
+  animation:coachPulse 2.4s ease-in-out infinite;
+}
+.coach-text{
+  margin:0;
+  font-family:var(--font-sans);
+  font-size:11.5px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  text-shadow:0 2px 10px rgba(0,0,0,0.9), 0 0 18px rgba(0,0,0,0.7);
+}
+.coach-arrow{width:44px;height:44px;}
+.coach-swipe{width:62px;height:62px;}
+.coach-mouse{width:40px;height:40px;}
+.coach-keys{display:none;}
+@keyframes coachPulse{
+  0%,100%{opacity:0.75;transform:translateY(0);}
+  50%{opacity:1;transform:translateY(-5px);}
+}
+/* phones: an arrow curling down to the thumbstick, and a swiping hand out in the open */
+.coach[data-mode="touch"] .coach-move{left:calc(max(22px, env(safe-area-inset-left)) + 86px);bottom:calc(max(26px, env(safe-area-inset-bottom)) + 92px);}
+.coach[data-mode="touch"] .coach-mouse{display:none;}
+.coach[data-mode="touch"] .coach-look{right:12%;top:42%;}
+/* computers: the keys themselves, and a mouse */
+.coach[data-mode="desk"] .coach-arrow, .coach[data-mode="desk"] .coach-swipe{display:none;}
+.coach[data-mode="desk"] .coach-keys{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.coach[data-mode="desk"] .coach-move{left:50%;transform:translateX(-50%);bottom:13%;}
+.coach[data-mode="desk"] .coach-look{right:13%;top:46%;}
+.coach-keys i{display:flex;gap:4px;font-style:normal;}
+.coach-keys b{
+  display:grid;
+  place-items:center;
+  width:26px;height:26px;
+  font-family:var(--font-sans);
+  font-size:11px;
+  font-weight:600;
+  border:1px solid rgba(226,199,138,0.55);
+  border-radius:6px;
+  background:rgba(21,17,14,0.72);
+  box-shadow:0 2px 8px rgba(0,0,0,0.5);
+}
+@media (prefers-reduced-motion: reduce){
+  .coach-move, .coach-look{animation:none;}
+}
+
+/* ---- how to look around: asked once on arriving in the lobby ---- */
+.motion-ask{
+  position:fixed;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  z-index:62;
+  width:min(410px, calc(100vw - 32px));
+  padding:22px 18px 18px;
+  text-align:center;
+  background:rgba(21,17,14,0.93);
+  border:1px solid var(--line);
+  border-radius:16px;
+  backdrop-filter:blur(8px);
+  box-shadow:0 18px 50px rgba(0,0,0,0.55);
+}
+.motion-ask[hidden]{display:none;}
+.motion-title{font-family:var(--font-display);font-weight:500;font-size:25px;margin:2px 0 16px;color:var(--ink);}
+/* two cards side by side: what each one gives you, drawn rather than described */
+.motion-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.motion-card{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  padding:12px 9px 14px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:rgba(255,255,255,0.035);
+  color:var(--gold-soft);
+  cursor:pointer;
+  transition:border-color .2s ease, background .2s ease, transform .2s ease;
+}
+.motion-card:hover, .motion-card:focus-visible{border-color:var(--gold);background:rgba(203,161,92,0.12);transform:translateY(-2px);}
+.motion-label{
+  display:block;
+  width:100%;
+  padding:7px 6px;
+  border-radius:999px;
+  font-family:var(--font-sans);
+  font-size:10.5px;
+  font-weight:600;
+  letter-spacing:0.04em;
+  line-height:1.3;
+  border:1px solid var(--gold);
+  color:var(--gold-soft);
+  background:rgba(21,17,14,0.6);
+}
+.motion-label.is-solid{
+  background:linear-gradient(135deg,var(--gold-soft),var(--gold));
+  color:#211a10;
+  border-color:transparent;
+}
+.motion-art{width:100%;height:auto;max-height:76px;color:var(--gold-soft);}
+.motion-copy{margin:16px 0 0;font-size:12px;line-height:1.6;color:var(--ink-dim);}
+.motion-note{margin:8px 0 0;font-size:11px;letter-spacing:0.04em;color:var(--ink-dim);opacity:0.75;}
+.motion-toggle{
+  position:fixed;
+  top:14px;
+  right:max(14px, env(safe-area-inset-right));
+  z-index:58;
+  font-family:var(--font-sans);
+  font-size:10.5px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  padding:8px 13px;
+  border-radius:999px;
+  border:1px solid rgba(226,199,138,0.45);
+  background:rgba(21,17,14,0.72);
+  backdrop-filter:blur(4px);
+  color:var(--gold-soft);
+  cursor:pointer;
+}
+/* only while a room is being walked: not over the opening, nor the 2D invitation */
+.motion-toggle, .motion-toggle[hidden]{display:none;}
+.gate.in-lobby .motion-toggle:not([hidden]), .gate.in-venue .motion-toggle:not([hidden]){display:block;}
+.motion-toggle[aria-pressed="true"]{border-color:var(--gold);background:rgba(60,45,22,0.8);}
+
 /* ---- walking around the venue ---- */
 /* thumbstick, bottom-left, thumb's reach on a phone */
 .stick{

@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { createLobby } from './lobby3d.js';
 import { createBallroom, planSvg, SPOTS } from './ballroom3d.js';
-import { createControls } from './fps.js';
+import { createControls, hasGyro } from './fps.js';
 
 const gate = document.getElementById('gate');
 const canvas = document.getElementById('gateCanvas');
@@ -381,7 +381,19 @@ function init() {
     pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
     pointer.y = (e.clientY / window.innerHeight) * 2 - 1;
   }
+  // The opening keeps the tilt sway it has always had: the hotel drifts with the phone while
+  // the guest stands and watches, which is the whole charm of it. Inside the lobby and the
+  // ballroom it is switched off — there the guest is walking, and a view pinned to how the
+  // phone is held is what makes people queasy. Looking around in there is the thumbstick, a
+  // drag, or (if they ask for it) the gyroscope, in fps.js.
+  const inRoom = () => state !== 'intro' && state !== 'idle' && state !== 'walk';
+
   function onOrient(e) {
+    if (inRoom()) {
+      // let the sway ease back to centre rather than freezing wherever it was
+      pointer.x = pointer.y = 0;
+      return;
+    }
     if (e.beta == null || e.gamma == null) return;
     const angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
     let x = e.gamma, y = e.beta;
@@ -610,6 +622,7 @@ function init() {
       state = 'lobby';
       gate.classList.add('in-lobby');
       controls.start(isTouch);
+      askMotion();
       setTimeout(shrinkStoryIntoRsvp, 700);
     }
   }
@@ -661,9 +674,95 @@ function init() {
     }, 550);
   }
 
+  // ---------- how the guest looks around inside: asked once, remembered after ----------
+  // The thumbstick and a drag always work. Taking the view from the phone's own movement is
+  // opt-in, because for some people it brings on motion sickness, and it can be turned off
+  // again at any point from the corner.
+  const MOTION_KEY = 'adamelsa.phoneMotion';
+  const motionAsk = document.getElementById('motionAsk');
+  const motionToggle = document.getElementById('motionToggle');
+  const motionState = motionToggle && motionToggle.querySelector('.motion-state');
+  let motionAsked = false;
+  let gyroThere = false;   // a gyroscope was actually found on this device
+
+  const storedMotion = () => {
+    try { return localStorage.getItem(MOTION_KEY); } catch (err) { return null; }
+  };
+  const rememberMotion = (on) => {
+    try { localStorage.setItem(MOTION_KEY, on ? 'on' : 'off'); } catch (err) { /* private browsing */ }
+  };
+  function showMotionState(on) {
+    if (!motionToggle || !gyroThere) return; // nothing to turn on: no toggle to offer
+    motionToggle.hidden = false;
+    motionToggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+    if (motionState) motionState.textContent = on ? 'Gerak ponsel: aktif' : 'Gerak ponsel: mati';
+  }
+  function setMotion(on) {
+    return controls.setGyro(on).then((got) => {
+      rememberMotion(got);
+      showMotionState(got);
+      return got;
+    });
+  }
+  // ---------- how to get about: shown on arriving, gone on the first move ----------
+  const coach = document.getElementById('coach');
+  let coachTimer = 0;
+  function showCoach() {
+    if (!coach || state !== 'lobby') return;
+    coach.dataset.mode = isTouch ? 'touch' : 'desk';
+    const [move, look] = coach.querySelectorAll('.coach-text');
+    if (isTouch) {
+      move.textContent = 'Tuas untuk berjalan';
+      look.textContent = 'Geser layar untuk melihat';
+    } else {
+      move.textContent = 'WASD untuk berjalan';
+      look.textContent = 'Gerakkan mouse untuk melihat';
+    }
+    coach.hidden = false;
+    coach.classList.remove('is-going');
+    // if they just stand and read it, let it go on its own
+    clearTimeout(coachTimer);
+    coachTimer = setTimeout(hideCoach, 14000);
+  }
+  function hideCoach() {
+    if (!coach || coach.hidden) return;
+    clearTimeout(coachTimer);
+    coach.classList.add('is-going');
+    coachTimer = setTimeout(() => { coach.hidden = true; }, 600);
+  }
+
+  // called when the lobby first comes up
+  function askMotion() {
+    if (motionAsked) return;
+    motionAsked = true;
+    // a computer walks with the keys and looks with the mouse: nothing to choose between
+    if (!isTouch) { showCoach(); return; }
+    hasGyro().then((yes) => {
+      gyroThere = yes;
+      // a phone or tablet with no gyroscope has only one way to play, so just get on with it
+      if (!yes) { showCoach(); return; }
+      const saved = storedMotion();
+      if (saved !== null) { setMotion(saved === 'on'); showCoach(); return; }
+      if (motionAsk) motionAsk.hidden = false; // the hints follow the choice
+    });
+  }
+  if (motionAsk) {
+    const choose = (on) => {
+      motionAsk.hidden = true;
+      setMotion(on); // iOS hands the sensor over only from inside this tap
+      showCoach();
+    };
+    const stickOnly = document.getElementById('motionStick');
+    const withGyro = document.getElementById('motionGyro');
+    if (stickOnly) stickOnly.addEventListener('click', () => choose(false));
+    if (withGyro) withGyro.addEventListener('click', () => choose(true));
+  }
+  if (motionToggle) motionToggle.addEventListener('click', () => { if (gyroThere) setMotion(!controls.gyroOn()); });
+
   // The guest moved or looked for themselves: the lobby's rails give way to walking, any
   // open card closes, and on a computer the pointer locks so the mouse turns the view.
   function takeWheel() {
+    hideCoach();
     if (state === 'lobby') {
       if (view.name !== 'rest') { setView({ name: 'rest' }); showCard(null); }
       lobby.roam(camera);
@@ -1085,6 +1184,7 @@ function init() {
       state = 'lobby';
       gate.classList.add('in-lobby');
       controls.start(isTouch);
+      askMotion();
     }
   }
 

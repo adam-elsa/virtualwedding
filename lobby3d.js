@@ -31,6 +31,8 @@ const PHOTOS = [
 ];
 // map board right beside the door
 const MAP_BOARD = { id: 'map', group: 'map', pos: [-4.86, 2.6, -11.94], normal: [0, 0, 1], max: 2.5, aspect: 1.45 };
+// how far down the night backdrop its horizon sits; the plane is hung so this lands at eye level
+const NIGHT_HORIZON = 0.66;
 const DESK_X = -3.4;
 const DOOR = { x: -8.1, w: 2.5, h: 3.35 };
 
@@ -99,15 +101,24 @@ export function createLobby() {
     const MULL = 0.09;                     // gold mullions between the panes
     const gold = std(0xcaa268, { roughness: 0.45, metalness: 0.45 });
     const glass = new THREE.MeshPhysicalMaterial({
-      color: 0xcfe0e6, roughness: 0.05, metalness: 0, transparent: true, opacity: 0.09,
+      color: 0x0d1420, roughness: 0.04, metalness: 0.15, transparent: true, opacity: 0.7,
       transmission: 0, side: THREE.DoubleSide, depthWrite: false,
     });
 
     const doorGlass = glass.clone();
-    doorGlass.opacity = 0.14; // the leaves a touch heavier than the fixed panes, so they read as doors
+    doorGlass.opacity = 0.78; // the leaves a touch heavier than the fixed panes, so they read as doors
 
-    // the night beyond, a little outside the glass so it reads as depth, not a sticker
-    const night = add(new THREE.PlaneGeometry(BAY.w + 5, BAY.h + 2.4), new THREE.MeshBasicMaterial({ map: T.night, toneMapped: false }), 0, (BAY.h + 2.4) / 2 - 0.5, Z + 1.35);
+    // The night beyond. Set a long way out and scaled to subtend the same angle, so that as
+    // the guest walks it slides much less than the window frame does — the parallax is what
+    // sells it as somewhere else rather than a picture stuck to the glass. The texture is
+    // blurred, standing in for a lens focused on the room rather than the street.
+    const FAR = 34, NEAR = 1.35, VIEW = 8;            // how far out, where it used to be, a typical standing distance
+    const k = (VIEW + FAR) / (VIEW + NEAR);
+    const nw = (BAY.w + 5) * k, nh = (BAY.h + 2.4) * k;
+    // Scaling it up moves its horizon too, and a horizon 8 m up means the window looks at
+    // nothing but sky. Hang it so the horizon lands at eye level whatever the scale.
+    const nightY = EYE_H + nh * (NIGHT_HORIZON - 0.5);
+    const night = add(new THREE.PlaneGeometry(nw, nh), new THREE.MeshBasicMaterial({ map: T.night, toneMapped: false }), 0, nightY, Z + FAR);
     night.rotation.y = Math.PI;
 
     // the wall around the opening: panelled, like the rest of the room
@@ -123,7 +134,8 @@ export function createLobby() {
     const sheet = add(new THREE.PlaneGeometry(BAY.w, BAY.h), glass, 0, BAY.h / 2, Z - 0.02);
     sheet.rotation.y = Math.PI;
 
-    const bar = (w, h, x, y, z = Z - 0.06) => boxB(w, h, 0.1, gold, x, y - h / 2, z);
+    // y is the bar's top; boxB places a box on its bottom, so take the whole height off
+    const bar = (w, h, x, y, z = Z - 0.06) => boxB(w, h, 0.1, gold, x, y - h, z);
     bar(BAY.w + 0.2, 0.16, 0, BAY.h + 0.08);                 // head
     bar(BAY.w + 0.2, 0.14, 0, 0.14);                          // sill
     bar(BAY.w, 0.12, 0, DOORH + 0.12);                        // transom over the doors
@@ -640,7 +652,7 @@ export function createLobby() {
     enter(camera) {
       // the room is ~24 m deep: a tight far plane gives the depth buffer far more precision
       // than the outdoor scene's 600 m, which keeps close layers (frame, mat, photo) from flickering
-      camera.far = 70;
+      camera.far = 95; // the night backdrop sits 34 m beyond the entrance, for the parallax
       camera.updateProjectionMatrix();
       fitCamera(camera);
       camera.position.copy(cam.start);
@@ -726,7 +738,7 @@ export function createLobby() {
     // Back out of the ballroom: standing just inside the door (the caller then heads for goRest).
     comeBack(camera) {
       camera.near = 0.5;
-      camera.far = 70;
+      camera.far = 95; // the night backdrop sits 34 m beyond the entrance, for the parallax
       camera.updateProjectionMatrix();
       fitCamera(camera);
       const at = doorwayPose(camera);
@@ -979,59 +991,67 @@ function makeTextures() {
   // walk in — warm light pooling under the canopy, the plaza and the fountain's glow beyond,
   // and the hotel's own columns standing against it.
   T.night = canvasTex(1024, 384, (g, w, h) => {
-    const GROUND = h * 0.66;              // where the plaza meets the night
-    const sky = g.createLinearGradient(0, 0, 0, GROUND);
-    sky.addColorStop(0, '#060a16');
-    sky.addColorStop(0.7, '#101a33');
-    sky.addColorStop(1, '#1d2a4a');
-    g.fillStyle = sky; g.fillRect(0, 0, w, GROUND);
+    // painted on its own canvas first, then laid down blurred: the guest's eye is on the
+    // room, so the street beyond the glass should not be the sharpest thing in the frame
+    const off = document.createElement('canvas');
+    off.width = w; off.height = h;
+    const n = off.getContext('2d');
+    const GROUND = h * NIGHT_HORIZON;     // where the plaza meets the night
+    const sky = n.createLinearGradient(0, 0, 0, GROUND);
+    sky.addColorStop(0, '#16223f');
+    sky.addColorStop(0.7, '#2b3f6d');
+    sky.addColorStop(1, '#4a5f93');
+    n.fillStyle = sky; n.fillRect(0, 0, w, GROUND);
     // the plaza: dark stone at night, with the canopy lights pooling on it near the doors
-    g.fillStyle = '#0e0d14'; g.fillRect(0, GROUND, w, h - GROUND);
-    const floorLit = g.createRadialGradient(w / 2, GROUND + 6, 8, w / 2, GROUND + 6, w * 0.3);
-    floorLit.addColorStop(0, 'rgba(226,176,110,0.42)');
-    floorLit.addColorStop(0.5, 'rgba(226,176,110,0.14)');
+    n.fillStyle = '#3a3340'; n.fillRect(0, GROUND, w, h - GROUND);
+    const floorLit = n.createRadialGradient(w / 2, GROUND + 6, 8, w / 2, GROUND + 6, w * 0.52);
+    floorLit.addColorStop(0, 'rgba(255,206,140,0.95)');
+    floorLit.addColorStop(0.5, 'rgba(240,190,120,0.42)');
     floorLit.addColorStop(1, 'rgba(226,176,110,0)');
-    g.fillStyle = floorLit; g.fillRect(0, GROUND, w, h - GROUND);
+    n.fillStyle = floorLit; n.fillRect(0, GROUND, w, h - GROUND);
     // the red carpet running out from the doors
-    g.fillStyle = 'rgba(120,36,40,0.85)';
-    g.beginPath();
-    g.moveTo(w / 2 - 54, h); g.lineTo(w / 2 + 54, h);
-    g.lineTo(w / 2 + 30, GROUND); g.lineTo(w / 2 - 30, GROUND);
-    g.closePath(); g.fill();
+    n.fillStyle = 'rgba(190,58,62,0.95)';
+    n.beginPath();
+    n.moveTo(w / 2 - 54, h); n.lineTo(w / 2 + 54, h);
+    n.lineTo(w / 2 + 30, GROUND); n.lineTo(w / 2 - 30, GROUND);
+    n.closePath(); n.fill();
     // the fountain, lit, sitting on the plaza down the carpet
-    const fg = g.createRadialGradient(w / 2, GROUND - 6, 2, w / 2, GROUND - 6, 70);
-    fg.addColorStop(0, 'rgba(255,238,200,0.95)');
-    fg.addColorStop(0.45, 'rgba(255,206,140,0.35)');
+    const fg = n.createRadialGradient(w / 2, GROUND - 6, 2, w / 2, GROUND - 6, 70);
+    fg.addColorStop(0, 'rgba(255,248,226,1)');
+    fg.addColorStop(0.45, 'rgba(255,220,160,0.75)');
     fg.addColorStop(1, 'rgba(255,206,140,0)');
-    g.fillStyle = fg; g.beginPath(); g.ellipse(w / 2, GROUND - 4, 76, 26, 0, 0, Math.PI * 2); g.fill();
+    n.fillStyle = fg; n.beginPath(); n.ellipse(w / 2, GROUND - 4, 76, 26, 0, 0, Math.PI * 2); n.fill();
     // the portico's columns, standing on the plaza, the warm light catching their inner edge
     for (const cx of [0.13, 0.31, 0.69, 0.87]) {
       const x = cx * w, foot = h * 0.93;
-      g.fillStyle = '#080b15'; g.fillRect(x - 17, h * 0.06, 34, foot - h * 0.06);
-      g.fillStyle = 'rgba(226,186,122,0.45)';
-      g.fillRect(x + (cx < 0.5 ? 13 : -17), h * 0.1, 4, foot - h * 0.1);
-      g.fillStyle = '#0b1120'; g.fillRect(x - 23, h * 0.06, 46, 12);   // capital
-      g.fillStyle = '#0a0e1a'; g.fillRect(x - 22, foot - 12, 44, 12);  // base
+      n.fillStyle = '#0f1526'; n.fillRect(x - 17, h * 0.06, 34, foot - h * 0.06);
+      n.fillStyle = 'rgba(255,214,150,0.9)';
+      n.fillRect(x + (cx < 0.5 ? 13 : -17), h * 0.1, 4, foot - h * 0.1);
+      n.fillStyle = '#0b1120'; n.fillRect(x - 23, h * 0.06, 46, 12);   // capital
+      n.fillStyle = '#0a0e1a'; n.fillRect(x - 22, foot - 12, 44, 12);  // base
     }
     // the canopy edge across the top
-    g.fillStyle = '#060912'; g.fillRect(0, 0, w, h * 0.09);
-    g.fillStyle = 'rgba(226,186,122,0.42)'; g.fillRect(0, h * 0.09, w, 3);
+    n.fillStyle = '#060912'; n.fillRect(0, 0, w, h * 0.09);
+    n.fillStyle = 'rgba(226,186,122,0.42)'; n.fillRect(0, h * 0.09, w, 3);
     // lamps under the canopy, and the city far off
     const r = rng(7);
     for (let i = 0; i < 90; i++) {
       const x = r() * w, y = h * (0.3 + r() * 0.3);
-      g.fillStyle = `rgba(255,${200 + r() * 45 | 0},${140 + r() * 70 | 0},${0.2 + r() * 0.45})`;
-      g.fillRect(x, y, 2, 2);
+      n.fillStyle = `rgba(255,${200 + r() * 45 | 0},${140 + r() * 70 | 0},${0.2 + r() * 0.45})`;
+      n.fillRect(x, y, 2, 2);
     }
     for (const [lx, ly] of [[0.22, 0.4], [0.78, 0.4]]) {
-      const lg = g.createRadialGradient(lx * w, ly * h, 1, lx * w, ly * h, 34);
-      lg.addColorStop(0, 'rgba(255,232,186,1)');
-      lg.addColorStop(0.3, 'rgba(255,206,140,0.45)');
+      const lg = n.createRadialGradient(lx * w, ly * h, 1, lx * w, ly * h, 34);
+      lg.addColorStop(0, 'rgba(255,245,215,1)');
+      lg.addColorStop(0.3, 'rgba(255,220,160,0.8)');
       lg.addColorStop(1, 'rgba(255,206,140,0)');
-      g.fillStyle = lg; g.beginPath(); g.arc(lx * w, ly * h, 34, 0, Math.PI * 2); g.fill();
+      n.fillStyle = lg; n.beginPath(); n.arc(lx * w, ly * h, 34, 0, Math.PI * 2); n.fill();
     }
+    // a touch wider than the canvas so the blur does not darken its own edges
+    if ('filter' in g) g.filter = 'blur(6px)';
+    g.drawImage(off, -10, -10, w + 20, h + 20);
+    g.filter = 'none';
   });
-
   T.rug = canvasTex(256, 256, (g, w, h) => {
     const r = rng(9);
     g.fillStyle = '#48484a'; g.fillRect(0, 0, w, h);
