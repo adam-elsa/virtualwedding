@@ -14,6 +14,9 @@ const ACCEL = 9;               // how quickly the walk picks up and settles
 const MOUSE = 0.0022;          // radians per pixel of mouse movement
 const TOUCH = 2.4;             // radians per screen-width dragged
 const PITCH_MAX = 0.62;        // keep the horizon in view; the rooms have little to see straight up
+const GYRO = 0.9;              // how much of the phone's turn the view takes up
+const GYRO_DEAD = 1.6;         // deg/s of hand tremor to ignore, so a still phone keeps a still view
+const GYRO_MAX = 0.08;         // radians a single reading may turn the view, against sensor spikes
 const STICK_R = 54;            // thumbstick radius in CSS pixels
 const DEAD = 0.14;             // ignore the first bit of a thumbstick push
 
@@ -33,6 +36,8 @@ export function createControls(canvas, stick) {
   let stickId = null, lookId = null;
   let lookAt = null;
   let locked = false;
+  let gyro = false;
+  let gyroAt = 0;
 
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
@@ -120,6 +125,34 @@ export function createControls(canvas, stick) {
   document.addEventListener('pointerlockchange', onLockChange);
   document.addEventListener('mousemove', onMouseMove);
 
+  // ---- the phone's gyroscope ----
+  // Only the rate of turn, from devicemotion — not the tilt that deviceorientation reports,
+  // which is the accelerometer reading gravity. The difference is what it feels like: tilt
+  // pins the view to however the phone is held, so the view is never still and the horizon
+  // leans with your hands. Turn rate instead moves the view only while the phone is actually
+  // turning, and leaves it where you stop — the same thing a drag does, which is why it is
+  // added to the same place.
+  function onMotion(e) {
+    const r = e.rotationRate;
+    if (!r || (r.alpha == null && r.beta == null && r.gamma == null)) return;
+    const now = e.timeStamp || performance.now();
+    const dt = gyroAt ? Math.min(0.1, (now - gyroAt) / 1000) : 0;
+    gyroAt = now;
+    if (!dt) return;
+    const dead = (v) => (Math.abs(v || 0) < GYRO_DEAD ? 0 : (v || 0));
+    const beta = dead(r.beta), gamma = dead(r.gamma);
+    const angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    let yawRate = -gamma, pitchRate = -beta;            // upright, portrait
+    if (angle === 90) { yawRate = -beta; pitchRate = gamma; }
+    else if (angle === -90 || angle === 270) { yawRate = beta; pitchRate = -gamma; }
+    const cap = (v) => Math.max(-GYRO_MAX, Math.min(GYRO_MAX, (v * Math.PI) / 180 * dt * GYRO));
+    const dy = cap(yawRate), dp = cap(pitchRate);
+    if (!dy && !dp) return;
+    look.yaw += dy;
+    look.pitch += dp;
+    touched = true;
+  }
+
   // ---- keyboard ----
   const KEYS = {
     KeyW: 'f', ArrowUp: 'f', KeyS: 'b', ArrowDown: 'b',
@@ -144,12 +177,15 @@ export function createControls(canvas, stick) {
     // the room is being walked around: show the thumbstick, accept the keys
     start(touch) {
       enabled = true;
+      look.yaw = look.pitch = 0;   // drop anything that piled up while away
       if (stick) stick.hidden = !touch;
+      if (gyro) { gyroAt = 0; window.addEventListener('devicemotion', onMotion); }
     },
     stop() {
       enabled = false;
       keys.clear();
       stickOff();
+      window.removeEventListener('devicemotion', onMotion);
       if (stick) stick.hidden = true;
       if (locked) document.exitPointerLock();
     },
@@ -160,6 +196,27 @@ export function createControls(canvas, stick) {
       if (r && r.catch) r.catch(() => {});   // denied (or the document lost focus): mouse look just stays off
     },
     locked: () => locked,
+    // Looking around with the phone's own movement. iOS only hands over the sensor from
+    // inside a tap, so this is called from the button the guest presses to turn it on.
+    setGyro(on) {
+      if (on === gyro) return Promise.resolve(gyro);
+      if (!on) {
+        gyro = false;
+        window.removeEventListener('devicemotion', onMotion);
+        return Promise.resolve(false);
+      }
+      const start = () => {
+        gyro = true;
+        gyroAt = 0;
+        if (enabled) window.addEventListener('devicemotion', onMotion);
+        return true;
+      };
+      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        return DeviceMotionEvent.requestPermission().then((r) => (r === 'granted' ? start() : false), () => false);
+      }
+      return Promise.resolve(start());
+    },
+    gyroOn: () => gyro,
     // how far the finger has travelled in the current touch-look, in pixels
     dragged: () => (lookAt ? lookAt[2] : 0),
     // move vector for this frame, keys folded in with the thumbstick
@@ -188,6 +245,7 @@ export function createControls(canvas, stick) {
     clampPitch: (p) => clamp(p, -PITCH_MAX, PITCH_MAX),
     dispose() {
       this.stop();
+      window.removeEventListener('devicemotion', onMotion);
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointermove', onMove);
       canvas.removeEventListener('pointerup', onUp);

@@ -143,6 +143,22 @@
       <button class="btn-outline" id="venueBack" type="button">← Lobi</button>
     </div>
   </div>
+  <!-- asked once, on arriving in the lobby: some people find a view tied to the phone's
+       movement makes them queasy, so moving with the thumbstick alone is the default -->
+  <div class="motion-ask" id="motionAsk" hidden>
+    <p class="eyebrow">Melihat Sekeliling</p>
+    <h3 class="motion-title">Pilih cara melihat</h3>
+    <p class="motion-copy">Geser layar untuk melihat sekeliling selalu bisa. Anda juga boleh menggerakkan ponsel untuk melihat — tapi sebagian orang jadi pusing karenanya.</p>
+    <div class="motion-choices">
+      <button class="btn-solid" id="motionStick" type="button">Tuas &amp; geser saja</button>
+      <button class="btn-outline" id="motionGyro" type="button">Tambah gerak ponsel</button>
+    </div>
+    <p class="motion-note">Bisa diubah kapan saja lewat tombol ⟳ di pojok.</p>
+  </div>
+  <!-- flips the phone-motion look on and off once the choice is made -->
+  <button class="motion-toggle" id="motionToggle" type="button" aria-pressed="false" hidden>
+    <span aria-hidden="true">⟳</span> <span class="motion-state">Gerak ponsel: mati</span>
+  </button>
   <!-- walking around: thumbstick on phones, crosshair once the mouse takes over on a computer -->
   <div class="stick" id="stick" aria-hidden="true" hidden><span class="stick-knob"></span></div>
   <div class="crosshair" id="crosshair" aria-hidden="true" hidden></div>

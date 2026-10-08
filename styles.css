@@ -584,6 +584,49 @@ body.invitation-overlay .site-main{position:relative;z-index:65;}
 /* the venue stays mounted underneath, but must not catch taps meant for the invitation */
 body.invitation-overlay .gate{pointer-events:none;}
 
+/* ---- how to look around: asked once on arriving in the lobby ---- */
+.motion-ask{
+  position:fixed;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  z-index:62;
+  width:min(380px, calc(100vw - 48px));
+  padding:26px 24px 20px;
+  text-align:center;
+  background:rgba(21,17,14,0.93);
+  border:1px solid var(--line);
+  border-radius:16px;
+  backdrop-filter:blur(8px);
+  box-shadow:0 18px 50px rgba(0,0,0,0.55);
+}
+.motion-ask[hidden]{display:none;}
+.motion-title{font-family:var(--font-display);font-weight:500;font-size:25px;margin:2px 0 10px;color:var(--ink);}
+.motion-copy{margin:0 0 18px;font-size:13.5px;line-height:1.65;color:var(--ink-dim);}
+.motion-choices{display:flex;flex-direction:column;gap:10px;}
+.motion-choices button{width:100%;}
+.motion-note{margin:16px 0 0;font-size:11px;letter-spacing:0.04em;color:var(--ink-dim);opacity:0.75;}
+.motion-toggle{
+  position:fixed;
+  top:14px;
+  right:max(14px, env(safe-area-inset-right));
+  z-index:58;
+  font-family:var(--font-sans);
+  font-size:10.5px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  padding:8px 13px;
+  border-radius:999px;
+  border:1px solid rgba(226,199,138,0.45);
+  background:rgba(21,17,14,0.72);
+  backdrop-filter:blur(4px);
+  color:var(--gold-soft);
+  cursor:pointer;
+}
+/* only while a room is being walked: not over the opening, nor the 2D invitation */
+.motion-toggle, .motion-toggle[hidden]{display:none;}
+.gate.in-lobby .motion-toggle:not([hidden]), .gate.in-venue .motion-toggle:not([hidden]){display:block;}
+.motion-toggle[aria-pressed="true"]{border-color:var(--gold);background:rgba(60,45,22,0.8);}
+
 /* ---- walking around the venue ---- */
 /* thumbstick, bottom-left, thumb's reach on a phone */
 .stick{

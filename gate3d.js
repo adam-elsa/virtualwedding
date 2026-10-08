@@ -381,7 +381,19 @@ function init() {
     pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
     pointer.y = (e.clientY / window.innerHeight) * 2 - 1;
   }
+  // The opening keeps the tilt sway it has always had: the hotel drifts with the phone while
+  // the guest stands and watches, which is the whole charm of it. Inside the lobby and the
+  // ballroom it is switched off — there the guest is walking, and a view pinned to how the
+  // phone is held is what makes people queasy. Looking around in there is the thumbstick, a
+  // drag, or (if they ask for it) the gyroscope, in fps.js.
+  const inRoom = () => state !== 'intro' && state !== 'idle' && state !== 'walk';
+
   function onOrient(e) {
+    if (inRoom()) {
+      // let the sway ease back to centre rather than freezing wherever it was
+      pointer.x = pointer.y = 0;
+      return;
+    }
     if (e.beta == null || e.gamma == null) return;
     const angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
     let x = e.gamma, y = e.beta;
@@ -610,6 +622,7 @@ function init() {
       state = 'lobby';
       gate.classList.add('in-lobby');
       controls.start(isTouch);
+      askMotion();
       setTimeout(shrinkStoryIntoRsvp, 700);
     }
   }
@@ -660,6 +673,55 @@ function init() {
       setTimeout(() => { if (line) line.style.cssText = ''; }, 1400);
     }, 550);
   }
+
+  // ---------- how the guest looks around inside: asked once, remembered after ----------
+  // The thumbstick and a drag always work. Taking the view from the phone's own movement is
+  // opt-in, because for some people it brings on motion sickness, and it can be turned off
+  // again at any point from the corner.
+  const MOTION_KEY = 'adamelsa.phoneMotion';
+  const motionAsk = document.getElementById('motionAsk');
+  const motionToggle = document.getElementById('motionToggle');
+  const motionState = motionToggle && motionToggle.querySelector('.motion-state');
+  let motionAsked = false;
+
+  const storedMotion = () => {
+    try { return localStorage.getItem(MOTION_KEY); } catch (err) { return null; }
+  };
+  const rememberMotion = (on) => {
+    try { localStorage.setItem(MOTION_KEY, on ? 'on' : 'off'); } catch (err) { /* private browsing */ }
+  };
+  function showMotionState(on) {
+    if (!motionToggle) return;
+    motionToggle.hidden = false;
+    motionToggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+    if (motionState) motionState.textContent = on ? 'Gerak ponsel: aktif' : 'Gerak ponsel: mati';
+  }
+  function setMotion(on) {
+    return controls.setGyro(on).then((got) => {
+      rememberMotion(got);
+      showMotionState(got);
+      return got;
+    });
+  }
+  // called when the lobby first comes up
+  function askMotion() {
+    if (motionAsked || !isTouch) return;
+    motionAsked = true;
+    const saved = storedMotion();
+    if (saved !== null) { setMotion(saved === 'on'); return; }
+    if (motionAsk) motionAsk.hidden = false;
+  }
+  if (motionAsk) {
+    const choose = (on) => {
+      motionAsk.hidden = true;
+      setMotion(on); // iOS hands the sensor over only from inside this tap
+    };
+    const stickOnly = document.getElementById('motionStick');
+    const withGyro = document.getElementById('motionGyro');
+    if (stickOnly) stickOnly.addEventListener('click', () => choose(false));
+    if (withGyro) withGyro.addEventListener('click', () => choose(true));
+  }
+  if (motionToggle) motionToggle.addEventListener('click', () => setMotion(!controls.gyroOn()));
 
   // The guest moved or looked for themselves: the lobby's rails give way to walking, any
   // open card closes, and on a computer the pointer locks so the mouse turns the view.
@@ -1085,6 +1147,7 @@ function init() {
       state = 'lobby';
       gate.classList.add('in-lobby');
       controls.start(isTouch);
+      askMotion();
     }
   }
 
