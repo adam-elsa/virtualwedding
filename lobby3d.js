@@ -121,8 +121,10 @@ export function createLobby() {
     const night = add(new THREE.PlaneGeometry(nw, nh), new THREE.MeshBasicMaterial({ map: T.night, toneMapped: false }), 0, nightY, Z + FAR);
     night.rotation.y = Math.PI;
 
-    // the wall around the opening: panelled, like the rest of the room
-    const sideW = (W - BAY.w) / 2;
+    // The wall around the opening, panelled like the rest of the room. Carried well past the
+    // room's own corners, because the night behind it is now 90 m wide against a 20 m room:
+    // without this it shows in the sliver past the corner where nothing else covers it.
+    const sideW = (W - BAY.w) / 2 + 20;
     for (const sx of [-1, 1]) {
       const wall = add(new THREE.PlaneGeometry(sideW, H), M.panel, sx * (BAY.w + sideW) / 2, H / 2, Z);
       wall.rotation.y = Math.PI;
@@ -990,68 +992,152 @@ function makeTextures() {
   // Out through the entrance glass: the portico at night, the way the guest saw it on the
   // walk in — warm light pooling under the canopy, the plaza and the fountain's glow beyond,
   // and the hotel's own columns standing against it.
+  // Out through the entrance glass: the road the guests arrived along, at night. Painted on
+  // its own canvas and laid down blurred — the eye is on the room, so the street beyond is
+  // not the sharpest thing in the frame, and the blur turns the lamps and traffic into the
+  // bokeh you actually see looking out of a lit room into the dark.
   T.night = canvasTex(1024, 384, (g, w, h) => {
-    // painted on its own canvas first, then laid down blurred: the guest's eye is on the
-    // room, so the street beyond the glass should not be the sharpest thing in the frame
     const off = document.createElement('canvas');
     off.width = w; off.height = h;
     const n = off.getContext('2d');
-    const GROUND = h * NIGHT_HORIZON;     // where the plaza meets the night
-    const sky = n.createLinearGradient(0, 0, 0, GROUND);
-    sky.addColorStop(0, '#16223f');
-    sky.addColorStop(0.7, '#2b3f6d');
-    sky.addColorStop(1, '#4a5f93');
-    n.fillStyle = sky; n.fillRect(0, 0, w, GROUND);
-    // the plaza: dark stone at night, with the canopy lights pooling on it near the doors
-    n.fillStyle = '#3a3340'; n.fillRect(0, GROUND, w, h - GROUND);
-    const floorLit = n.createRadialGradient(w / 2, GROUND + 6, 8, w / 2, GROUND + 6, w * 0.52);
-    floorLit.addColorStop(0, 'rgba(255,206,140,0.95)');
-    floorLit.addColorStop(0.5, 'rgba(240,190,120,0.42)');
-    floorLit.addColorStop(1, 'rgba(226,176,110,0)');
-    n.fillStyle = floorLit; n.fillRect(0, GROUND, w, h - GROUND);
-    // the red carpet running out from the doors
-    n.fillStyle = 'rgba(190,58,62,0.95)';
-    n.beginPath();
-    n.moveTo(w / 2 - 54, h); n.lineTo(w / 2 + 54, h);
-    n.lineTo(w / 2 + 30, GROUND); n.lineTo(w / 2 - 30, GROUND);
-    n.closePath(); n.fill();
-    // the fountain, lit, sitting on the plaza down the carpet
-    const fg = n.createRadialGradient(w / 2, GROUND - 6, 2, w / 2, GROUND - 6, 70);
-    fg.addColorStop(0, 'rgba(255,248,226,1)');
-    fg.addColorStop(0.45, 'rgba(255,220,160,0.75)');
-    fg.addColorStop(1, 'rgba(255,206,140,0)');
-    n.fillStyle = fg; n.beginPath(); n.ellipse(w / 2, GROUND - 4, 76, 26, 0, 0, Math.PI * 2); n.fill();
-    // the portico's columns, standing on the plaza, the warm light catching their inner edge
-    for (const cx of [0.13, 0.31, 0.69, 0.87]) {
-      const x = cx * w, foot = h * 0.93;
-      n.fillStyle = '#0f1526'; n.fillRect(x - 17, h * 0.06, 34, foot - h * 0.06);
-      n.fillStyle = 'rgba(255,214,150,0.9)';
-      n.fillRect(x + (cx < 0.5 ? 13 : -17), h * 0.1, 4, foot - h * 0.1);
-      n.fillStyle = '#0b1120'; n.fillRect(x - 23, h * 0.06, 46, 12);   // capital
-      n.fillStyle = '#0a0e1a'; n.fillRect(x - 22, foot - 12, 44, 12);  // base
-    }
-    // the canopy edge across the top
-    n.fillStyle = '#060912'; n.fillRect(0, 0, w, h * 0.09);
-    n.fillStyle = 'rgba(226,186,122,0.42)'; n.fillRect(0, h * 0.09, w, 3);
-    // lamps under the canopy, and the city far off
+    const HZ = h * NIGHT_HORIZON;        // the horizon, hung at eye level by the plane below
     const r = rng(7);
-    for (let i = 0; i < 90; i++) {
-      const x = r() * w, y = h * (0.3 + r() * 0.3);
-      n.fillStyle = `rgba(255,${200 + r() * 45 | 0},${140 + r() * 70 | 0},${0.2 + r() * 0.45})`;
-      n.fillRect(x, y, 2, 2);
+    const VX = w * 0.5;                  // where the road runs off to
+
+    // ---- sky, lifted toward the horizon by the city underneath it ----
+    const sky = n.createLinearGradient(0, 0, 0, HZ);
+    sky.addColorStop(0, '#0a1326');
+    sky.addColorStop(0.72, '#1d2c50');
+    sky.addColorStop(1, '#46568a');
+    n.fillStyle = sky; n.fillRect(0, 0, w, HZ);
+    for (let i = 0; i < 120; i++) {
+      const y = r() * HZ * 0.62;
+      n.fillStyle = `rgba(255,255,255,${0.1 + r() * 0.5})`;
+      n.fillRect(r() * w, y, 1.6, 1.6);
     }
-    for (const [lx, ly] of [[0.22, 0.4], [0.78, 0.4]]) {
-      const lg = n.createRadialGradient(lx * w, ly * h, 1, lx * w, ly * h, 34);
-      lg.addColorStop(0, 'rgba(255,245,215,1)');
-      lg.addColorStop(0.3, 'rgba(255,220,160,0.8)');
-      lg.addColorStop(1, 'rgba(255,206,140,0)');
-      n.fillStyle = lg; n.beginPath(); n.arc(lx * w, ly * h, 34, 0, Math.PI * 2); n.fill();
+
+    // ---- the city, low on the horizon, with windows left on ----
+    for (let i = 0; i < 26; i++) {
+      const bw = 18 + r() * 54, bh = 14 + r() * 62;
+      const x = r() * (w + 60) - 30;
+      n.fillStyle = `rgba(${12 + r() * 10 | 0},${18 + r() * 12 | 0},${38 + r() * 16 | 0},0.95)`;
+      n.fillRect(x, HZ - bh, bw, bh);
+      for (let wy = HZ - bh + 5; wy < HZ - 4; wy += 7) {
+        for (let wx = x + 4; wx < x + bw - 4; wx += 7) {
+          if (r() > 0.55) continue;
+          n.fillStyle = `rgba(255,${205 + r() * 40 | 0},${150 + r() * 60 | 0},${0.35 + r() * 0.5})`;
+          n.fillRect(wx, wy, 3, 3.4);
+        }
+      }
     }
+
+    // ---- the road, running away to the horizon ----
+    const HALF = w * 0.3;                        // half its width at the near edge
+    const edge = (t) => VX + t * HALF * (1 - 0);  // t in -1..1 at the bottom
+    const roadY = (t) => HZ + t * (h - HZ);       // t 0 at the horizon, 1 at the bottom
+    const across = (t, u) => VX + u * HALF * t;   // u -1..1 across, t 0..1 toward the viewer
+    n.beginPath();
+    n.moveTo(VX, HZ);
+    n.lineTo(across(1, -1), h);
+    n.lineTo(across(1, 1), h);
+    n.closePath();
+    n.fillStyle = '#464150'; n.fill();
+    // wet tarmac catching the lamps
+    const sheen = n.createLinearGradient(0, HZ, 0, h);
+    sheen.addColorStop(0, 'rgba(200,190,214,0.55)');
+    sheen.addColorStop(0.45, 'rgba(160,148,176,0.2)');
+    sheen.addColorStop(1, 'rgba(130,120,146,0.08)');
+    n.save(); n.clip(); n.fillStyle = sheen; n.fillRect(0, HZ, w, h - HZ);
+
+    // the centre line, dashes closing up as they go
+    n.fillStyle = 'rgba(255,250,232,1)';
+    for (let i = 0; i < 16; i++) {
+      const t0 = Math.pow(i / 16, 2.1), t1 = Math.pow((i + 0.45) / 16, 2.1);
+      n.beginPath();
+      n.moveTo(across(t0, -0.012), roadY(t0));
+      n.lineTo(across(t1, -0.03), roadY(t1));
+      n.lineTo(across(t1, 0.03), roadY(t1));
+      n.lineTo(across(t0, 0.012), roadY(t0));
+      n.closePath(); n.fill();
+    }
+    n.restore();
+
+    // kerbs and the pavement either side, where the forecourt meets the road
+    for (const sgn of [-1, 1]) {
+      n.beginPath();
+      n.moveTo(VX, HZ);
+      n.lineTo(across(1, sgn), h);
+      n.lineTo(across(1, sgn * 1.9), h);
+      n.lineTo(VX + sgn * 10, HZ);
+      n.closePath();
+      n.fillStyle = '#4a4450'; n.fill();
+      n.fillStyle = 'rgba(214,200,176,0.32)';
+      n.beginPath();
+      n.moveTo(VX, HZ); n.lineTo(across(1, sgn), h);
+      n.lineTo(across(1, sgn * 1.07), h); n.lineTo(VX + sgn * 3, HZ);
+      n.closePath(); n.fill();
+    }
+
+    // ---- street lamps down both sides, shrinking into the distance ----
+    for (const sgn of [-1, 1]) {
+      for (const t of [0.16, 0.3, 0.52, 0.86]) {
+        const x = across(t, sgn * 1.26), y = roadY(t);
+        const tall = 20 + t * 118;
+        n.strokeStyle = '#141520'; n.lineWidth = 1.2 + t * 3;
+        n.beginPath(); n.moveTo(x, y); n.lineTo(x, y - tall); n.stroke();
+        n.beginPath(); n.moveTo(x, y - tall); n.lineTo(x - sgn * tall * 0.17, y - tall); n.stroke();
+        const lx = x - sgn * tall * 0.17, ly = y - tall;
+        const lamp = n.createRadialGradient(lx, ly, 1, lx, ly, 12 + t * 46);
+        lamp.addColorStop(0, 'rgba(255,246,216,1)');
+        lamp.addColorStop(0.25, 'rgba(255,214,150,0.72)');
+        lamp.addColorStop(1, 'rgba(255,196,120,0)');
+        n.fillStyle = lamp;
+        n.beginPath(); n.arc(lx, ly, 12 + t * 46, 0, Math.PI * 2); n.fill();
+        // and the pool it throws on the tarmac
+        const pool = n.createRadialGradient(lx, y, 2, lx, y, 16 + t * 60);
+        pool.addColorStop(0, 'rgba(255,224,170,0.95)');
+        pool.addColorStop(1, 'rgba(255,196,120,0)');
+        n.fillStyle = pool;
+        n.beginPath(); n.ellipse(lx, y, 24 + t * 86, (24 + t * 86) * 0.38, 0, 0, Math.PI * 2); n.fill();
+      }
+    }
+
+    // ---- traffic: tail lights going away, headlights coming on ----
+    const car = (t, u, colour, rad) => {
+      const x = across(t, u), y = roadY(t) - (3 + t * 10);
+      const gl = n.createRadialGradient(x, y, 0.5, x, y, rad * (0.5 + t));
+      gl.addColorStop(0, colour.replace('A', '1'));
+      gl.addColorStop(0.3, colour.replace('A', '0.6'));
+      gl.addColorStop(1, colour.replace('A', '0'));
+      n.fillStyle = gl;
+      n.beginPath(); n.arc(x, y, rad * (0.5 + t), 0, Math.PI * 2); n.fill();
+    };
+    for (const [t, u] of [[0.1, 0.42], [0.14, 0.58], [0.3, 0.4], [0.34, 0.56]]) car(t, u, 'rgba(255,90,70,A)', 30);
+    for (const [t, u] of [[0.2, -0.46], [0.24, -0.62], [0.46, -0.44], [0.5, -0.6]]) car(t, u, 'rgba(240,248,255,A)', 34);
+
+    // ---- the hotel's own forecourt light, spilling out past the doors ----
+    const apron = n.createRadialGradient(VX, h, 10, VX, h, w * 0.4);
+    apron.addColorStop(0, 'rgba(255,220,164,0.5)');
+    apron.addColorStop(0.42, 'rgba(255,206,140,0.15)');
+    apron.addColorStop(1, 'rgba(255,196,120,0)');
+    n.fillStyle = apron; n.fillRect(0, HZ, w, h - HZ);
+
+    // The plane is wider than the opening, and three.js clamps and stretches its edge column
+    // wherever it shows past the side walls. Fade the sides into the night so there is
+    // nothing there to stretch.
+    const sides = n.createLinearGradient(0, 0, w, 0);
+    sides.addColorStop(0, 'rgba(7,12,26,1)');
+    sides.addColorStop(0.07, 'rgba(7,12,26,0)');
+    sides.addColorStop(0.93, 'rgba(7,12,26,0)');
+    sides.addColorStop(1, 'rgba(7,12,26,1)');
+    n.fillStyle = sides; n.fillRect(0, 0, w, h);
+
     // a touch wider than the canvas so the blur does not darken its own edges
-    if ('filter' in g) g.filter = 'blur(6px)';
+    if ('filter' in g) g.filter = 'blur(2.2px)';
     g.drawImage(off, -10, -10, w + 20, h + 20);
     g.filter = 'none';
   });
+
   T.rug = canvasTex(256, 256, (g, w, h) => {
     const r = rng(9);
     g.fillStyle = '#48484a'; g.fillRect(0, 0, w, h);
