@@ -20,6 +20,34 @@ const GYRO_MAX = 0.08;         // radians a single reading may turn the view, ag
 const STICK_R = 54;            // thumbstick radius in CSS pixels
 const DEAD = 0.14;             // ignore the first bit of a thumbstick push
 
+// Is there a gyroscope to offer at all? A desktop browser has the DeviceMotionEvent
+// constructor whether or not anything is attached to it, and a phone without a gyroscope
+// still fires devicemotion — just with nothing in rotationRate. So listen briefly and see
+// what actually turns up. iOS is the exception: it keeps the sensor behind a tap, so it
+// cannot be probed beforehand, but a browser that gates it is on a device that has it.
+export function hasGyro(timeout = 900) {
+  if (typeof DeviceMotionEvent === 'undefined') return Promise.resolve(false);
+  if (typeof DeviceMotionEvent.requestPermission === 'function') return Promise.resolve(true);
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (yes) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      window.removeEventListener('devicemotion', probe);
+      resolve(yes);
+    };
+    const probe = (e) => {
+      const r = e.rotationRate;
+      if (!r) return done(false);
+      if (r.alpha != null || r.beta != null || r.gamma != null) done(true);
+      // readings with nothing in them mean the event fires but no gyroscope backs it
+    };
+    const timer = setTimeout(() => done(false), timeout);
+    window.addEventListener('devicemotion', probe);
+  });
+}
+
 // ---------------------------------------------------------------- controls
 
 // `canvas` is the 3D canvas; `stick` the thumbstick element (its knob is the first child).
