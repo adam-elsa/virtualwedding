@@ -44,7 +44,11 @@ export function createLobby() {
   const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.8, flatShading: true, ...extra });
   const M = {
     oak: std(0xb98a58, { roughness: 0.75 }),
-    backing: std(0x120c07),
+    // The wall behind the slats. Near enough the average of a slat and the gap beside it
+    // (oak covers 0.11 of every 0.26), because at a grazing angle the slats compress to less
+    // than a pixel each and the pixel lands somewhere between the two: against near-black it
+    // swung between bright oak and nothing, which is what the colour fringing was.
+    backing: std(0x4a3625),
     ceiling: new THREE.MeshBasicMaterial({ color: 0xc9c4bb }),
     panel: new THREE.MeshStandardMaterial({ map: T.panels, roughness: 0.75 }),
     blackMarble: new THREE.MeshStandardMaterial({ map: T.blackMarble, roughness: 0.25, metalness: 0.1 }),
@@ -184,7 +188,9 @@ export function createLobby() {
   along(-5.9, 11.9, 0.26, (z) => [W / 2 - 0.05, z, true]);
   along(-11.9, -6.1, 0.26, (z) => [5.95, z, true]);
   along(6.1, 9.9, 0.26, (x) => [x, -5.95, false]);
-  const slats = new THREE.InstancedMesh(new THREE.BoxGeometry(0.11, SLAT_H, 0.1), M.oak, slatSpots.length);
+  // a little wider than they were (0.11): thinner than this and they fall under a pixel
+  // sooner, and it is the sub-pixel ones that flicker as the guest walks
+  const slats = new THREE.InstancedMesh(new THREE.BoxGeometry(0.15, SLAT_H, 0.1), M.oak, slatSpots.length);
   const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), qSide = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
   const one = new THREE.Vector3(1, 1, 1);
   slatSpots.forEach(([x, z, side], i) => {
