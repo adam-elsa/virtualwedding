@@ -801,6 +801,8 @@ function init() {
   const lobbyHint = document.getElementById('lobbyHint');
   const lobbyBack = document.getElementById('lobbyBack');
   const card = document.getElementById('lobbyCard');
+  const lobbyTop = document.querySelector('.lobby-ui .lobby-top');
+  const lobbyBottom = document.querySelector('.lobby-ui .lobby-bottom');
   const tags = [...document.querySelectorAll('.lobby-tag')];
   if (lobbyHint) {
     lobbyHint.textContent = isTouch
@@ -969,26 +971,53 @@ function init() {
       }
     }
     placeCoupleCard();
-    // float each group's label over its photos
+    // Float each group's label over its photos.
+    // On a phone there is no hovering, so the labels have to show themselves — but all six at
+    // once, in portrait, piled on each other and on the title, is unreadable. Two things keep
+    // it honest: a label only shows while its photos are actually on screen (the two buttons
+    // are the exception, since they are what the guest came to press), and whatever is left is
+    // spread out so no two overlap, inside the band between the heading and the bottom bar.
     const w = canvas.clientWidth, h = canvas.clientHeight;
     const showAll = isTouch && view.name === 'rest' && lobby.settled();
+    const want = [];
     for (const tag of tags) {
       const group = tag.dataset.group;
       tmp.copy(lobby.anchors[group]).project(camera);
       const inFront = tmp.z < 1;
-      // keep labels on screen; on phones, groups out of view get pinned to the edge
       const half = tag.offsetWidth / 2 + 10;
       const x = ((tmp.x + 1) / 2) * w;
       const cx = Math.min(w - half, Math.max(half, x));
       const edge = x < 0 ? 'left' : x > w ? 'right' : '';
       tag.dataset.edge = edge;
-      // the two buttons (RSVP, Masuk Ballroom) are always there; the labels appear on hover (always on phones)
       const cta = tag.classList.contains('lobby-tag--cta');
-      const show = inFront && view.name === 'rest' && (showAll || cta || (hovered === group && !edge));
+      const show = inFront && view.name === 'rest'
+        && (cta || (showAll && !edge) || (hovered === group && !edge));
       tag.classList.toggle('is-visible', show);
+      if (!show) continue;
+      const hh = tag.offsetHeight;
       // labels float just above their anchor; the buttons sit on it (the desk front, the door)
-      const lift = cta ? '-50%' : '-100%';
-      tag.style.transform = `translate(${cx}px, ${((1 - tmp.y) / 2) * h}px) translate(-50%, ${lift})`;
+      want.push({ tag, cx, cy: ((1 - tmp.y) / 2) * h - (cta ? 0 : hh / 2 + 6), hw: tag.offsetWidth / 2, hh, cta });
+    }
+    spreadTags(want, w, h);
+    for (const t of want) t.tag.style.transform = `translate(${t.cx}px, ${t.cy}px) translate(-50%, -50%)`;
+  }
+
+  // Nudge labels down the screen until none sits on top of another. The buttons hold their
+  // place — they point at a thing the guest is about to press — so the labels move around them.
+  function spreadTags(list, w, h) {
+    const top = lobbyTop ? lobbyTop.getBoundingClientRect().bottom + 10 : 80;
+    const bottom = (lobbyBottom ? lobbyBottom.getBoundingClientRect().top : h) - 10;
+    for (const t of list) t.cy = Math.min(bottom - t.hh / 2, Math.max(top + t.hh / 2, t.cy));
+    const order = [...list].sort((a, b) => (a.cta === b.cta ? a.cy - b.cy : a.cta ? -1 : 1));
+    const done = [];
+    for (const t of order) {
+      for (let pass = 0; pass < 8; pass++) {
+        const hit = done.find((o) => Math.abs(o.cx - t.cx) < o.hw + t.hw + 6 && Math.abs(o.cy - t.cy) < (o.hh + t.hh) / 2 + 6);
+        if (!hit) break;
+        const below = hit.cy + (hit.hh + t.hh) / 2 + 6;
+        t.cy = below + t.hh / 2 > bottom ? hit.cy - (hit.hh + t.hh) / 2 - 6 : below;
+      }
+      done.push(t);
     }
   }
 

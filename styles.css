@@ -299,7 +299,6 @@ a{color:inherit;}
   border:1px solid var(--line);
   border-radius:999px;
   padding:8px 14px;
-  margin-top:-10px;
   backdrop-filter:blur(4px);
   cursor:pointer;
 }
@@ -722,6 +721,11 @@ body.invitation-overlay .gate{pointer-events:none;}
 .motion-toggle, .motion-toggle[hidden]{display:none;}
 .gate.in-lobby .motion-toggle:not([hidden]), .gate.in-venue .motion-toggle:not([hidden]){display:block;}
 .motion-toggle[aria-pressed="true"]{border-color:var(--gold);background:rgba(60,45,22,0.8);}
+
+/* phones: the labels have to share a narrow screen with each other and the heading */
+@media (max-width:560px){
+  .lobby-tag{font-size:10px;letter-spacing:0.14em;padding:6px 11px;}
+}
 
 /* ---- walking around the venue ---- */
 /* thumbstick, bottom-left, thumb's reach on a phone */

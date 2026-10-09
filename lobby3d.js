@@ -709,7 +709,11 @@ export function createLobby() {
       camera.position.lerp(raw.pos, a);
       camera.quaternion.slerp(raw.q, a);
     },
-    settled() { return cam.k >= 1; },
+    // The camera has arrived. Walking under their own steam counts: the glide's progress
+    // freezes the moment roam takes over, so without this the answer depends on whether the
+    // guest happened to interrupt a glide — which is why the labels behaved differently on
+    // arriving than on coming back from the ballroom.
+    settled() { return roam.on || cam.k >= 1; },
     // where an item's frame is on screen right now, in pixels (for cards attached beside it)
     screenRect(camera, id, w, h) {
       const e = entries[id];

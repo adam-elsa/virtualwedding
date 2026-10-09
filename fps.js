@@ -160,6 +160,26 @@ export function createControls(canvas, stick) {
   // leans with your hands. Turn rate instead moves the view only while the phone is actually
   // turning, and leaves it where you stop — the same thing a drag does, which is why it is
   // added to the same place.
+  // Which way is up, in the phone's own axes. Turning the view is rotation about the world's
+  // up, and tilting it is rotation about the screen's right edge — and where those axes lie
+  // inside the phone depends entirely on how it is being held. A phone lying flat turns about
+  // its z; held upright it turns about its y. Without this the two get mixed the moment the
+  // phone is held at anything but dead upright, so turning the phone tilts the view and
+  // tilting it pans. Taken from deviceorientation rather than the raw accelerometer because
+  // browsers agree on its sign, and it is only a reference frame — the view is still driven
+  // by the rate of turn alone, so holding the phone at an angle never moves anything.
+  const up = { x: 0, y: 1, z: 0, ready: false };
+  function onOrientRef(e) {
+    if (e.beta == null || e.gamma == null) return;
+    const b = (e.beta * Math.PI) / 180, g = (e.gamma * Math.PI) / 180;
+    const x = -Math.cos(b) * Math.sin(g), y = Math.sin(b), z = Math.cos(b) * Math.cos(g);
+    const k = up.ready ? 0.12 : 1;   // smoothed: it only has to track how the phone is held
+    up.x += (x - up.x) * k;
+    up.y += (y - up.y) * k;
+    up.z += (z - up.z) * k;
+    up.ready = true;
+  }
+
   function onMotion(e) {
     const r = e.rotationRate;
     if (!r || (r.alpha == null && r.beta == null && r.gamma == null)) return;
@@ -167,12 +187,20 @@ export function createControls(canvas, stick) {
     const dt = gyroAt ? Math.min(0.1, (now - gyroAt) / 1000) : 0;
     gyroAt = now;
     if (!dt) return;
-    const dead = (v) => (Math.abs(v || 0) < GYRO_DEAD ? 0 : (v || 0));
-    const beta = dead(r.beta), gamma = dead(r.gamma);
     const angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
-    let yawRate = -gamma, pitchRate = -beta;            // upright, portrait
-    if (angle === 90) { yawRate = -beta; pitchRate = gamma; }
-    else if (angle === -90 || angle === 270) { yawRate = beta; pitchRate = -gamma; }
+    const a = (angle * Math.PI) / 180;
+    // the screen's right edge, in the phone's axes: tilting is rotation about this
+    const rx = Math.cos(a), ry = -Math.sin(a);
+    // world up, in the phone's axes; before any reading arrives, assume it is held upright
+    let ux = up.x, uy = up.y, uz = up.z;
+    const len = Math.hypot(ux, uy, uz);
+    if (up.ready && len > 0.3) { ux /= len; uy /= len; uz /= len; }
+    else { ux = Math.sin(a); uy = Math.cos(a); uz = 0; }
+    // the turn itself, about the phone's own axes
+    const wx = r.beta || 0, wy = r.gamma || 0, wz = r.alpha || 0;
+    const dead = (v) => (Math.abs(v) < GYRO_DEAD ? 0 : v);
+    const yawRate = dead(-(wx * ux + wy * uy + wz * uz));
+    const pitchRate = dead(-(wx * rx + wy * ry));
     const cap = (v) => Math.max(-GYRO_MAX, Math.min(GYRO_MAX, (v * Math.PI) / 180 * dt * GYRO));
     const dy = cap(yawRate), dp = cap(pitchRate);
     if (!dy && !dp) return;
@@ -207,13 +235,14 @@ export function createControls(canvas, stick) {
       enabled = true;
       look.yaw = look.pitch = 0;   // drop anything that piled up while away
       if (stick) stick.hidden = !touch;
-      if (gyro) { gyroAt = 0; window.addEventListener('devicemotion', onMotion); }
+      if (gyro) { gyroAt = 0; window.addEventListener('devicemotion', onMotion); window.addEventListener('deviceorientation', onOrientRef); }
     },
     stop() {
       enabled = false;
       keys.clear();
       stickOff();
       window.removeEventListener('devicemotion', onMotion);
+      window.removeEventListener('deviceorientation', onOrientRef);
       if (stick) stick.hidden = true;
       if (locked) document.exitPointerLock();
     },
@@ -231,12 +260,16 @@ export function createControls(canvas, stick) {
       if (!on) {
         gyro = false;
         window.removeEventListener('devicemotion', onMotion);
+        window.removeEventListener('deviceorientation', onOrientRef);
         return Promise.resolve(false);
       }
       const start = () => {
         gyro = true;
         gyroAt = 0;
-        if (enabled) window.addEventListener('devicemotion', onMotion);
+        if (enabled) {
+          window.addEventListener('devicemotion', onMotion);
+          window.addEventListener('deviceorientation', onOrientRef);
+        }
         return true;
       };
       if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -274,6 +307,7 @@ export function createControls(canvas, stick) {
     dispose() {
       this.stop();
       window.removeEventListener('devicemotion', onMotion);
+      window.removeEventListener('deviceorientation', onOrientRef);
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointermove', onMove);
       canvas.removeEventListener('pointerup', onUp);
